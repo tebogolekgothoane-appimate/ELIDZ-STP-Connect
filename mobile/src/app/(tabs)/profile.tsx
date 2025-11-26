@@ -16,6 +16,8 @@ function ProfileScreen() {
 
     console.log(' ---- profile', profile);
 
+    const [allVerifications, setAllVerifications] = useState<SMMEVerification[]>([]);
+
     // Load verification status for SMME users
     useEffect(() => {
         if (isLoggedIn && profile?.id && profile?.role === 'SMME') {
@@ -29,11 +31,34 @@ function ProfileScreen() {
         try {
             const status = await verificationService.getVerificationStatus(profile.id);
             setVerificationStatus(status);
+            
+            // Load all documents
+            const allDocs = await verificationService.getAllVerifications(profile.id);
+            setAllVerifications(allDocs);
         } catch (error) {
             console.error('Error loading verification status:', error);
         } finally {
             setLoadingVerification(false);
         }
+    };
+
+    const getDocumentCount = () => {
+        const requiredTypes = ['Business Registration', 'ID Document', 'Business Profile'];
+        return allVerifications.filter(doc => requiredTypes.includes(doc.document_type)).length;
+    };
+
+    const getOverallStatus = () => {
+        const requiredTypes = ['Business Registration', 'ID Document', 'Business Profile'];
+        const requiredDocs = allVerifications.filter(doc => requiredTypes.includes(doc.document_type));
+        
+        if (requiredDocs.length < 3) return 'incomplete';
+        
+        const allVerified = requiredDocs.every(doc => doc.status === 'verified');
+        const anyRejected = requiredDocs.some(doc => doc.status === 'rejected');
+        
+        if (allVerified) return 'verified';
+        if (anyRejected) return 'rejected';
+        return 'pending';
     };
 
     const getVerificationStatusColor = (status?: string) => {

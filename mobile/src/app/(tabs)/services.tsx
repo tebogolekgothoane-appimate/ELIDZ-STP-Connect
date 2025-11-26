@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, View, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { PanoramaViewer } from '@/components/mixed-experiences/PanoramaViewer';
-import { FACILITIES, getFacilityById, getTenantsByLocation, getVRTourDataById } from '@/data/vrToursData';
+import { facilitiesService, type Facility, type FacilityWithTour, type VRScene, type VRSection } from '@/services/facilities.service';
+import { getTenantsByLocation } from '@/data/vrToursData';
 
 type ViewMode = 'panorama' | 'sections';
 type ScreenMode = 'list' | 'detail' | 'vr-tour';
@@ -13,21 +14,61 @@ export default function ServicesScreen() {
 	const params = useLocalSearchParams<{ id?: string }>();
 	const [screenMode, setScreenMode] = useState<ScreenMode>('list');
 	const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
-	const [selectedService, setSelectedService] = useState<any | null>(null);
+	const [selectedService, setSelectedService] = useState<VRSection | null>(null);
+	
+	// Data states
+	const [facilities, setFacilities] = useState<Facility[]>([]);
+	const [facilityWithTour, setFacilityWithTour] = useState<FacilityWithTour | null>(null);
+	const [loading, setLoading] = useState(true);
+	const [loadingTour, setLoadingTour] = useState(false);
 
 	// Use facility ID from params or selected facility
 	const facilityId = params.id || selectedFacilityId;
 
-	const tourData = useMemo(() => facilityId ? getVRTourDataById(facilityId) : null, [facilityId]);
-	const facilityMeta = useMemo(() => facilityId ? getFacilityById(facilityId) : null, [facilityId]);
 	const tenants = useMemo(
-		() => (facilityMeta ? getTenantsByLocation(facilityMeta.location) : []),
-		[facilityMeta]
+		() => (facilityWithTour ? getTenantsByLocation(facilityWithTour.location) : []),
+		[facilityWithTour]
 	);
 
 	const [viewMode, setViewMode] = useState<ViewMode>('panorama');
 	const [currentSection, setCurrentSection] = useState(0);
 	const [currentSceneId, setCurrentSceneId] = useState<string | null>(null);
+
+	// Fetch all facilities on mount
+	useEffect(() => {
+		loadFacilities();
+	}, []);
+
+	// Fetch facility tour data when facility is selected
+	useEffect(() => {
+		if (facilityId) {
+			loadFacilityTour(facilityId);
+		}
+	}, [facilityId]);
+
+	const loadFacilities = async () => {
+		setLoading(true);
+		try {
+			const data = await facilitiesService.getAllFacilities();
+			setFacilities(data);
+		} catch (error) {
+			console.error('Error loading facilities:', error);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const loadFacilityTour = async (id: string) => {
+		setLoadingTour(true);
+		try {
+			const data = await facilitiesService.getFacilityWithTour(id);
+			setFacilityWithTour(data);
+		} catch (error) {
+			console.error('Error loading facility tour:', error);
+		} finally {
+			setLoadingTour(false);
+		}
+	};
 
 	useEffect(() => {
 		setCurrentSection(0);
@@ -43,10 +84,10 @@ export default function ServicesScreen() {
 	};
 
 	// Handle service selection for VR tour
-	const handleServiceSelect = (service: any) => {
-		if (service.hasVR) {
+	const handleServiceSelect = (service: VRSection) => {
+		if (service.has_vr) {
 			setSelectedService(service);
-			setCurrentSceneId(service.vrSceneId || tourData?.initialSceneId);
+			setCurrentSceneId(service.vr_scene_id || facilityWithTour?.initialSceneId || null);
 			setScreenMode('vr-tour');
 		}
 	};
@@ -65,15 +106,17 @@ export default function ServicesScreen() {
 		setScreenMode('detail');
 	};
 
-	const activeSceneId = currentSceneId ?? tourData?.initialSceneId;
-	const activeScene = activeSceneId && tourData?.scenes ? tourData.scenes[activeSceneId] : null;
-	const hasSections = tourData?.sections ? tourData.sections.length > 0 : false;
+	const activeSceneId = currentSceneId ?? facilityWithTour?.initialSceneId;
+	const activeScene = activeSceneId && facilityWithTour?.scenes 
+		? facilityWithTour.scenes.find(s => s.id === activeSceneId) 
+		: null;
+	const hasSections = facilityWithTour?.sections ? facilityWithTour.sections.length > 0 : false;
 
 	const handleHotspotClick = (hotspotId: string) => {
-		if (!activeScene) return;
-		const hotspot = activeScene.hotspots.find((h: any) => h.id === hotspotId);
-		if (hotspot?.targetSceneId) {
-			setCurrentSceneId(hotspot.targetSceneId);
+		if (!activeScene || !activeScene.hotspots) return;
+		const hotspot = activeScene.hotspots.find((h) => h.id === hotspotId);
+		if (hotspot?.target_scene_id) {
+			setCurrentSceneId(hotspot.target_scene_id);
 		}
 	};
 
@@ -89,34 +132,44 @@ export default function ServicesScreen() {
 						</Text>
 					</View>
 
+					{/* Loading State */}
+					{loading && (
+						<View className="flex-1 items-center justify-center py-20">
+							<ActivityIndicator size="large" color="#002147" />
+							<Text className="text-gray-500 mt-4">Loading facilities...</Text>
+						</View>
+					)}
+
 					{/* Facilities List */}
-					<View className="px-6 py-4">
-						{FACILITIES.map((facility, index) => (
-							<Pressable
-								key={facility.id}
-								className="bg-white rounded-2xl mb-4 p-4 shadow-sm border border-gray-100 active:opacity-95"
-								onPress={() => handleFacilitySelect(facility.id)}
-							>
-								<View className="flex-row items-center">
-									<View className="w-16 h-16 rounded-xl items-center justify-center mr-4" style={{ backgroundColor: facility.color }}>
-										<Feather name={facility.icon as any} size={28} color="#FFFFFF" />
-									</View>
-									<View className="flex-1">
-										<Text className="text-lg font-bold text-[#002147] mb-1">{facility.name}</Text>
-										<Text className="text-gray-600 text-sm mb-2">{facility.description}</Text>
-										<View className="flex-row items-center">
-											<Text className="text-xs text-gray-500">{facility.location}</Text>
-											<Feather name="chevron-right" size={16} color="#FF6600" style={{ marginLeft: 'auto' }} />
+					{!loading && (
+						<View className="px-6 py-4">
+							{facilities.map((facility) => (
+								<Pressable
+									key={facility.id}
+									className="bg-white rounded-2xl mb-4 p-4 shadow-sm border border-gray-100 active:opacity-95"
+									onPress={() => handleFacilitySelect(facility.id)}
+								>
+									<View className="flex-row items-center">
+										<View className="w-16 h-16 rounded-xl items-center justify-center mr-4" style={{ backgroundColor: facility.color }}>
+											<Feather name={facility.icon as any} size={28} color="#FFFFFF" />
+										</View>
+										<View className="flex-1">
+											<Text className="text-lg font-bold text-[#002147] mb-1">{facility.name}</Text>
+											<Text className="text-gray-600 text-sm mb-2">{facility.description}</Text>
+											<View className="flex-row items-center">
+												<Text className="text-xs text-gray-500">{facility.location}</Text>
+												<Feather name="chevron-right" size={16} color="#FF6600" style={{ marginLeft: 'auto' }} />
+											</View>
 										</View>
 									</View>
-								</View>
-							</Pressable>
-						))}
-					</View>
+								</Pressable>
+							))}
+						</View>
+					)}
 				</ScrollView>
 			)}
 
-			{screenMode === 'detail' && tourData && facilityMeta && (
+			{screenMode === 'detail' && facilityWithTour && (
 				<ScrollView className="flex-1 bg-gray-50" contentContainerStyle={{ paddingBottom: 40 }}>
 					{/* Header */}
 					<View className="px-6 pt-12 pb-6 bg-white shadow-sm">
@@ -124,21 +177,29 @@ export default function ServicesScreen() {
 							<Pressable onPress={handleBackToList} className="p-2 mr-3">
 								<Feather name="arrow-left" size={24} color="#002147" />
 							</Pressable>
-							<View className="w-12 h-12 rounded-xl items-center justify-center mr-3" style={{ backgroundColor: facilityMeta.color }}>
-								<Feather name={facilityMeta.icon as any} size={24} color="#FFFFFF" />
+							<View className="w-12 h-12 rounded-xl items-center justify-center mr-3" style={{ backgroundColor: facilityWithTour.color }}>
+								<Feather name={facilityWithTour.icon as any} size={24} color="#FFFFFF" />
 							</View>
 							<View className="flex-1">
-								<Text className="text-2xl font-bold text-[#002147]">{facilityMeta.name}</Text>
-								<Text className="text-gray-600 text-sm">{facilityMeta.location}</Text>
+								<Text className="text-2xl font-bold text-[#002147]">{facilityWithTour.name}</Text>
+								<Text className="text-gray-600 text-sm">{facilityWithTour.location}</Text>
 							</View>
 						</View>
-						<Text className="text-gray-600 text-base">{facilityMeta.description}</Text>
+						<Text className="text-gray-600 text-base">{facilityWithTour.description}</Text>
 					</View>
 
+					{/* Loading State */}
+					{loadingTour && (
+						<View className="flex-1 items-center justify-center py-20">
+							<ActivityIndicator size="large" color="#002147" />
+						</View>
+					)}
+
 					{/* Services List */}
-					<View className="px-6 py-4">
-						<Text className="text-xl font-bold text-[#002147] mb-4">Available Services</Text>
-						{tourData.sections.map((service, index) => (
+					{!loadingTour && (
+						<View className="px-6 py-4">
+							<Text className="text-xl font-bold text-[#002147] mb-4">Available Services</Text>
+							{facilityWithTour.sections.map((service, index) => (
 							<Pressable
 								key={index}
 								className="bg-white rounded-2xl mb-4 p-4 shadow-sm border border-gray-100 active:opacity-95"
@@ -154,20 +215,21 @@ export default function ServicesScreen() {
 													<Text className="text-[#002147] text-[10px] font-medium">{detail}</Text>
 												</View>
 											))}
-										</View>
 									</View>
-									{service.hasVR ? (
-										<View className="ml-4">
-											<Feather name="eye" size={24} color="#FF6600" />
-										</View>
-									) : null}
 								</View>
-							</Pressable>
-						))}
-					</View>
+								{service.has_vr ? (
+									<View className="ml-4">
+										<Feather name="eye" size={24} color="#FF6600" />
+									</View>
+								) : null}
+							</View>
+						</Pressable>
+					))}
+				</View>
+					)}
 
 					{/* Tenants */}
-					{tenants.length > 0 && (
+					{!loadingTour && tenants.length > 0 && (
 						<View className="px-6 py-4">
 							<Text className="text-xl font-bold text-[#002147] mb-4">Tenants in this Facility</Text>
 							{tenants.map(tenant => (
@@ -186,9 +248,9 @@ export default function ServicesScreen() {
 				</ScrollView>
 			)}
 
-			{screenMode === 'vr-tour' && tourData && facilityMeta && selectedService && (
+			{screenMode === 'vr-tour' && facilityWithTour && selectedService && (
 				<View className="flex-1 bg-background">
-					<View className="px-6 pt-12 pb-6 flex-row items-center justify-between" style={{ backgroundColor: tourData.color }}>
+					<View className="px-6 pt-12 pb-6 flex-row items-center justify-between" style={{ backgroundColor: facilityWithTour.color }}>
 						<Pressable onPress={handleBackToDetail} className="p-2 bg-white/20 rounded-full">
 							<Feather name="arrow-left" size={24} color="#FFFFFF" />
 						</Pressable>
@@ -203,14 +265,14 @@ export default function ServicesScreen() {
 								className={`p-2 rounded-full ${viewMode === 'panorama' ? 'bg-white text-primary' : 'bg-white/20'}`}
 								onPress={() => setViewMode('panorama')}
 							>
-								<Feather name="globe" size={20} color={viewMode === 'panorama' ? tourData.color : '#FFFFFF'} />
+								<Feather name="globe" size={20} color={viewMode === 'panorama' ? facilityWithTour.color : '#FFFFFF'} />
 							</Pressable>
 							<Pressable
 								className={`p-2 rounded-full ${viewMode === 'sections' ? 'bg-white text-primary' : 'bg-white/20'}`}
 								onPress={() => hasSections && setViewMode('sections')}
 								disabled={!hasSections}
 							>
-								<Feather name="list" size={20} color={viewMode === 'sections' ? tourData.color : '#FFFFFF'} />
+								<Feather name="list" size={20} color={viewMode === 'sections' ? facilityWithTour.color : '#FFFFFF'} />
 							</Pressable>
 						</View>
 					</View>
@@ -218,9 +280,9 @@ export default function ServicesScreen() {
 					{/* VR Panorama Viewer */}
 					{viewMode === 'panorama' && activeScene ? (
 						<PanoramaViewer
-							imageUrl={activeScene.image}
+							imageUrl={facilitiesService.getImageUrl(activeScene.image_url, facilityWithTour.id)}
 							title={activeScene.title}
-							hotspots={activeScene.hotspots}
+							hotspots={activeScene.hotspots || []}
 							onHotspotClick={handleHotspotClick}
 						/>
 					) : (
@@ -228,12 +290,12 @@ export default function ServicesScreen() {
 							{/* Service Overview */}
 							<View className="bg-card rounded-2xl p-6 shadow-sm border border-border mb-6">
 								<View className="flex-row items-center mb-4">
-									<View className="w-12 h-12 rounded-xl items-center justify-center mr-3" style={{ backgroundColor: facilityMeta.color }}>
-										<Feather name={facilityMeta.icon as any} size={24} color="#FFFFFF" />
+									<View className="w-12 h-12 rounded-xl items-center justify-center mr-3" style={{ backgroundColor: facilityWithTour.color }}>
+										<Feather name={facilityWithTour.icon as any} size={24} color="#FFFFFF" />
 									</View>
 									<View className="flex-1">
 										<Text className="text-xl font-bold text-foreground">{selectedService.title}</Text>
-										<Text className="text-sm text-muted-foreground">{facilityMeta.location}</Text>
+										<Text className="text-sm text-muted-foreground">{facilityWithTour.location}</Text>
 									</View>
 								</View>
 								<Text className="text-base text-muted-foreground leading-6">
@@ -246,7 +308,7 @@ export default function ServicesScreen() {
 								<Text className="text-lg font-semibold text-foreground mb-4">Key Features & Services</Text>
 								{selectedService.details.map((detail: string, index: number) => (
 									<View key={index} className="flex-row items-center mb-3">
-										<View className="w-2 h-2 rounded-full mr-3" style={{ backgroundColor: tourData.color }} />
+										<View className="w-2 h-2 rounded-full mr-3" style={{ backgroundColor: facilityWithTour.color }} />
 										<Text className="text-base text-foreground flex-1">{detail}</Text>
 									</View>
 								))}

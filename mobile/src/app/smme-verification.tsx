@@ -9,29 +9,65 @@ import * as ImagePicker from 'expo-image-picker';
 import { verificationService } from '@/services/verification.service';
 import { ScreenScrollView } from '@/components/ScreenScrollView';
 
+interface DocumentSlot {
+    type: 'Business Registration' | 'ID Document' | 'Business Profile';
+    label: string;
+    description: string;
+    icon: string;
+    uri: string | null;
+}
+
 export default function SMMEVerificationScreen() {
     const { profile } = useAuthContext();
-    const [documentUri, setDocumentUri] = useState<string | null>(null);
-    const [documentType, setDocumentType] = useState<'CIPC' | 'Tax Clearance' | 'ID' | 'Other' | 'General'>('General');
+    const [documents, setDocuments] = useState<DocumentSlot[]>([
+        {
+            type: 'Business Registration',
+            label: 'Business Registration (CIPC)',
+            description: 'Your official company registration certificate',
+            icon: 'file-text',
+            uri: null
+        },
+        {
+            type: 'ID Document',
+            label: 'ID Document',
+            description: 'Clear photo of your South African ID',
+            icon: 'credit-card',
+            uri: null
+        },
+        {
+            type: 'Business Profile',
+            label: 'Business Profile',
+            description: 'Company profile or business plan document',
+            icon: 'briefcase',
+            uri: null
+        }
+    ]);
     const [isUploading, setIsUploading] = useState(false);
 
-    const pickDocument = async () => {
+    const pickDocument = async (index: number) => {
         // We are using ImagePicker as a proxy for document picking since expo-document-picker is not installed
         // In a real app, we should add expo-document-picker for PDFs
         const result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
+            allowsEditing: false,
             quality: 0.8,
         });
 
         if (!result.canceled) {
-            setDocumentUri(result.assets[0].uri);
+            const updatedDocuments = [...documents];
+            updatedDocuments[index].uri = result.assets[0].uri;
+            setDocuments(updatedDocuments);
         }
     };
 
     const handleUpload = async () => {
-        if (!documentUri) {
-            Alert.alert('Error', 'Please select a document to upload.');
+        // Check if all 3 required documents are uploaded
+        const missingDocs = documents.filter(doc => !doc.uri);
+        if (missingDocs.length > 0) {
+            Alert.alert(
+                'Missing Documents', 
+                `Please upload all 3 required documents:\n${missingDocs.map(d => `• ${d.label}`).join('\n')}`
+            );
             return;
         }
 
@@ -39,16 +75,29 @@ export default function SMMEVerificationScreen() {
 
         setIsUploading(true);
         try {
-            // 1. Upload file (mocked for now)
-            const publicUrl = await verificationService.uploadDocument(documentUri);
+            // Upload all documents
+            const uploadPromises = documents.map(async (doc) => {
+                if (!doc.uri) return null;
+                
+                // 1. Upload file to Supabase Storage
+                const publicUrl = await verificationService.uploadDocument(doc.uri, profile.id, doc.type);
+                
+                return {
+                    url: publicUrl,
+                    type: doc.type
+                };
+            });
+
+            const uploadedDocs = await Promise.all(uploadPromises);
+            const validDocs = uploadedDocs.filter(d => d !== null) as { url: string; type: any }[];
             
-            // 2. Create verification record
-            await verificationService.submitVerification(profile.id, publicUrl, documentType);
+            // 2. Submit all verification records
+            await verificationService.submitMultipleDocuments(profile.id, validDocs);
             
             Alert.alert(
                 'Success', 
-                'Your document has been submitted for verification. We will notify you once approved.',
-                [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+                'All documents have been submitted for verification. We will review them within 24-48 hours and notify you once approved.',
+                [{ text: 'OK', onPress: () => router.replace('/(tabs)/profile') }]
             );
         } catch (error: any) {
             Alert.alert('Error', error.message || 'Failed to submit verification.');
@@ -72,64 +121,96 @@ export default function SMMEVerificationScreen() {
                         Verify Your Business
                     </Text>
                     <Text className="text-gray-500 text-center mt-2">
-                        To access exclusive SMME benefits, please upload your business registration documents (e.g., CIPC, Tax Clearance).
+                        Upload the 3 required documents to prove your business legitimacy and gain access to exclusive SMME benefits.
                     </Text>
                 </View>
 
-                <View className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
-                    <Text className="font-semibold text-[#002147] mb-4">Upload Document</Text>
+                {/* Required Documents Section */}
+                <View className="mb-6">
+                    <Text className="text-sm font-bold text-[#002147] mb-4 uppercase tracking-wide">
+                        Required Documents (3)
+                    </Text>
                     
-                    <Pressable 
-                        onPress={pickDocument}
-                        className={`border-2 border-dashed rounded-xl h-48 items-center justify-center mb-4 ${documentUri ? 'border-[#28A745] bg-green-50' : 'border-gray-300 bg-gray-50'}`}
-                    >
-                        {documentUri ? (
-                            <View className="items-center">
-                                <Image source={{ uri: documentUri }} className="w-20 h-20 rounded-lg mb-2" resizeMode="cover" />
-                                <Text className="text-[#28A745] font-semibold">Document Selected</Text>
-                                <Text className="text-xs text-gray-500 mt-1">Tap to change</Text>
+                    {documents.map((doc, index) => (
+                        <View key={doc.type} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-4">
+                            <View className="flex-row items-center mb-3">
+                                <View className="w-10 h-10 bg-[#002147]/5 rounded-full items-center justify-center mr-3">
+                                    <Feather name={doc.icon as any} size={20} color="#002147" />
+                                </View>
+                                <View className="flex-1">
+                                    <Text className="font-bold text-[#002147] text-base">{doc.label}</Text>
+                                    <Text className="text-xs text-gray-500 mt-0.5">{doc.description}</Text>
+                                </View>
+                                {doc.uri && (
+                                    <View className="w-6 h-6 bg-[#28A745] rounded-full items-center justify-center">
+                                        <Feather name="check" size={14} color="white" />
+                                    </View>
+                                )}
                             </View>
-                        ) : (
-                            <View className="items-center">
-                                <Feather name="upload-cloud" size={40} color="#9CA3AF" className="mb-2" />
-                                <Text className="text-gray-500 font-medium">Tap to select image</Text>
-                                <Text className="text-xs text-gray-400 mt-1">JPG, PNG supported</Text>
-                            </View>
-                        )}
-                    </Pressable>
-
-                    {/* Document Type Selection - Simple buttons for now */}
-                    <Text className="text-xs font-semibold text-gray-500 mb-2 uppercase">Document Type</Text>
-                    <View className="flex-row flex-wrap gap-2 mb-6">
-                        {['CIPC', 'Tax Clearance', 'ID', 'Other'].map((type) => (
-                            <Pressable
-                                key={type}
-                                onPress={() => setDocumentType(type as any)}
-                                className={`px-4 py-2 rounded-full border ${documentType === type ? 'bg-[#002147] border-[#002147]' : 'bg-white border-gray-200'}`}
+                            
+                            <Pressable 
+                                onPress={() => pickDocument(index)}
+                                className={`border-2 border-dashed rounded-xl h-32 items-center justify-center ${doc.uri ? 'border-[#28A745] bg-green-50' : 'border-gray-300 bg-gray-50'}`}
                             >
-                                <Text className={`text-xs font-medium ${documentType === type ? 'text-white' : 'text-gray-600'}`}>
-                                    {type}
-                                </Text>
+                                {doc.uri ? (
+                                    <View className="items-center">
+                                        <Image source={{ uri: doc.uri }} className="w-16 h-16 rounded-lg mb-2" resizeMode="cover" />
+                                        <Text className="text-[#28A745] font-semibold text-sm">Document Uploaded</Text>
+                                        <Text className="text-xs text-gray-500 mt-1">Tap to change</Text>
+                                    </View>
+                                ) : (
+                                    <View className="items-center">
+                                        <Feather name="upload-cloud" size={32} color="#9CA3AF" />
+                                        <Text className="text-gray-500 font-medium text-sm mt-2">Tap to upload</Text>
+                                        <Text className="text-xs text-gray-400 mt-1">JPG, PNG supported</Text>
+                                    </View>
+                                )}
                             </Pressable>
-                        ))}
-                    </View>
-
-                    <Button
-                        className="bg-[#002147] h-14 rounded-full"
-                        onPress={handleUpload}
-                        disabled={isUploading || !documentUri}
-                    >
-                        <Text className="text-white font-bold text-lg">
-                            {isUploading ? 'Submitting...' : 'Submit for Verification'}
-                        </Text>
-                    </Button>
+                        </View>
+                    ))}
                 </View>
 
-                <View className="flex-row items-start bg-blue-50 p-4 rounded-xl">
-                    <Feather name="info" size={20} color="#002147" className="mt-0.5 mr-3" />
-                    <Text className="flex-1 text-[#002147] text-sm leading-5">
-                        Your documents will be reviewed by our admin team. This process usually takes 24-48 hours.
+                {/* Progress Indicator */}
+                <View className="bg-white p-4 rounded-xl mb-6 border border-gray-100">
+                    <View className="flex-row items-center justify-between mb-2">
+                        <Text className="text-sm font-semibold text-[#002147]">Upload Progress</Text>
+                        <Text className="text-sm font-bold text-[#002147]">
+                            {documents.filter(d => d.uri).length}/3
+                        </Text>
+                    </View>
+                    <View className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <View 
+                            className="h-full bg-[#28A745] rounded-full"
+                            style={{ width: `${(documents.filter(d => d.uri).length / 3) * 100}%` }}
+                        />
+                    </View>
+                </View>
+
+                {/* Submit Button */}
+                <Button
+                    className="bg-[#002147] h-14 rounded-full mb-6"
+                    onPress={handleUpload}
+                    disabled={isUploading || documents.some(d => !d.uri)}
+                >
+                    <Text className="text-white font-bold text-lg">
+                        {isUploading ? 'Submitting Documents...' : `Submit All Documents (${documents.filter(d => d.uri).length}/3)`}
                     </Text>
+                </Button>
+
+                {/* Info Box */}
+                <View className="bg-blue-50 p-5 rounded-xl border border-blue-100">
+                    <View className="flex-row items-start">
+                        <Feather name="info" size={20} color="#002147" style={{ marginTop: 2, marginRight: 12 }} />
+                        <View className="flex-1">
+                            <Text className="text-[#002147] font-semibold mb-2">Verification Process</Text>
+                            <Text className="text-[#002147] text-sm leading-5">
+                                • All 3 documents are required for verification{'\n'}
+                                • Admin review typically takes 24-48 hours{'\n'}
+                                • You'll be notified via email once approved{'\n'}
+                                • Ensure documents are clear and legible
+                            </Text>
+                        </View>
+                    </View>
                 </View>
             </View>
         </ScreenScrollView>
