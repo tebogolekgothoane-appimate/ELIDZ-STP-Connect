@@ -5,7 +5,7 @@ import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthContext } from '@/hooks/use-auth-context';
-import { SMEWithServicesProducts, SMEServiceProduct } from '@/services/sme.service';
+import { SMMEWithServicesProducts, SMMEServiceProduct } from '@/services/smme.service';
 import { TenantLogo } from '@/components/TenantLogo';
 import { useBusinessSearch } from '@/hooks/useSearch';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -45,18 +45,18 @@ interface SMME {
     services: Service[];
 }
 
-// Map database SME to SMME interface
-function mapSMEToSMME(sme: SMEWithServicesProducts): SMME {
+// Map database SMME to SMME interface
+function mapSMMEToSMME(smmme: SMMEWithServicesProducts): SMME {
     // Get contact info from first service/product if available
-    const firstItem = [...sme.services, ...sme.products][0];
-    const contactEmail = firstItem?.contact_email || sme.email;
+    const firstItem = [...smmme.services, ...smmme.products][0];
+    const contactEmail = firstItem?.contact_email || smmme.email;
     const contactPhone = firstItem?.contact_phone;
     const website = firstItem?.website_url;
 
     // Determine industry from organization or services/products
-    let industry = sme.organization || 'General';
-    if (sme.services.length > 0 || sme.products.length > 0) {
-        const categories = [...sme.services.map(s => s.category), ...sme.products.map(p => p.category)];
+    let industry = smmme.organization || 'General';
+    if (smmme.services.length > 0 || smmme.products.length > 0) {
+        const categories = [...smmme.services.map(s => s.category), ...smmme.products.map(p => p.category)];
         if (categories.some(cat => cat?.toLowerCase().includes('software') || cat?.toLowerCase().includes('development'))) {
             industry = 'Technology';
         } else if (categories.some(cat => cat?.toLowerCase().includes('design'))) {
@@ -71,28 +71,28 @@ function mapSMEToSMME(sme: SMEWithServicesProducts): SMME {
     }
 
     return {
-        id: sme.id,
-        name: sme.name,
+        id: smmme.id,
+        name: smmme.name,
         industry: industry,
-        sector: sme.organization || industry,
+        sector: smmme.organization || industry,
         location: 'ELIDZ STP',
-        description: sme.bio || sme.organization || 'Verified SME partner',
-        logo_url: sme.avatar !== 'blue' ? sme.avatar : undefined, // Assuming avatar might be a URL or 'blue'
-        verified: true, // All SMEs from database are considered verified
+        description: smmme.bio || smmme.organization || 'Verified SMME partner',
+        logo_url: smmme.avatar !== 'blue' ? smmme.avatar : undefined, // Assuming avatar might be a URL or 'blue'
+        verified: true, // Only verified SMMEs are returned by the service
         bbbee: undefined, // Can be added to profiles table later
         contact: {
             email: contactEmail,
             phone: contactPhone,
             website: website,
         },
-        products: sme.products.map((p: SMEServiceProduct) => ({
+        products: smmme.products.map((p: SMMEServiceProduct) => ({
             id: p.id,
             name: p.name,
             description: p.description,
             category: p.category,
             price: p.price,
         })),
-        services: sme.services.map((s: SMEServiceProduct) => ({
+        services: smmme.services.map((s: SMMEServiceProduct) => ({
             id: s.id,
             name: s.name,
             description: s.description,
@@ -103,7 +103,7 @@ function mapSMEToSMME(sme: SMEWithServicesProducts): SMME {
 
 export default function VerifiedSMMEsScreen() {
     const { profile: user } = useAuthContext();
-    const isSME = user?.role === 'SME';
+    const isSMME = user?.role === 'SMME';
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [expandedSMME, setExpandedSMME] = useState<string | null>(null);
@@ -111,13 +111,13 @@ export default function VerifiedSMMEsScreen() {
     const debouncedSearch = useDebounce(searchQuery, 300);
 
     // Use the search hook
-    const { data: smes, isLoading: loading } = useBusinessSearch(debouncedSearch);
+    const { data: smmmes, isLoading: loading } = useBusinessSearch(debouncedSearch);
 
     const verifiedSMMEs = React.useMemo(() => {
-        return (smes || []).map(mapSMEToSMME);
-    }, [smes]);
+        return (smmmes || []).map(mapSMMEToSMME);
+    }, [smmmes]);
 
-    // Categories for filtering - extract unique industries from loaded SMEs
+    // Categories for filtering - extract unique industries from loaded SMMEs
     const categories = React.useMemo(() => {
         const industries = new Set<string>();
         verifiedSMMEs.forEach(smme => {
@@ -158,7 +158,7 @@ export default function VerifiedSMMEsScreen() {
                                 Discover verified partners and their services.
                             </Text>
                         </View>
-                        {isSME && (
+                        {isSMME && (
                             <Pressable
                                 className="bg-white/20 border border-white/30 px-4 py-2 rounded-xl active:opacity-80 ml-4"
                                 onPress={() => router.push({ pathname: '/post-service-product' as any })}

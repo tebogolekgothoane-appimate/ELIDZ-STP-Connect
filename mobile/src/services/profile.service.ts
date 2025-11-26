@@ -32,6 +32,7 @@ class ProfileService {
     organization?: string;
     bio?: string;
     avatar?: string;
+    address?: string;
   }): Promise<Profile> {
     console.log('ProfileService.createProfile called with:', profileData);
 
@@ -55,6 +56,7 @@ class ProfileService {
           p_name: profileData.name,
           p_email: profileData.email,
           p_role: profileData.role,
+          p_address: profileData.address || null,
           p_organization: profileData.organization || null,
           p_bio: profileData.bio || null,
           p_avatar: profileData.avatar || 'blue',

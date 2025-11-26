@@ -14,19 +14,20 @@ import { Button } from '@/components/ui/button';
 const { width, height } = Dimensions.get('window');
 
 export default function SignupScreen() {
-	const { signup } = useAuthContext();
+	const { signup, signInWithGoogle } = useAuthContext();
 	const [name, setName] = useState('');
 	const [email, setEmail] = useState('');
+	const [address, setAddress] = useState('');
 	const [password, setPassword] = useState('');
 	const [confirmPassword, setConfirmPassword] = useState('');
-	const [role, setRole] = useState<'Entrepreneur' | 'Researcher' | 'SME' | 'Student' | 'Investor' | 'Tenant'>('Entrepreneur');
+	const [role, setRole] = useState<'Entrepreneur' | 'Researcher' | 'SMME' | 'Student' | 'Investor' | 'Tenant'>('Entrepreneur');
 	const [isLoading, setIsLoading] = useState(false);
 	const [showPassword, setShowPassword] = useState(false);
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 	const [acceptedTerms, setAcceptedTerms] = useState(false);
 
 	async function handleSignup() {
-		if (!name || !email || !password) {
+		if (!name || !email || !password || !address) {
 			Alert.alert('Error', 'Please fill in all fields');
 			return;
 		}
@@ -54,10 +55,27 @@ export default function SignupScreen() {
 
 		setIsLoading(true);
 		try {
-			await signup(name, email, password, role);
+			await signup(name, email, password, role, address);
+			// If we get here, email confirmation is not required or user is already confirmed
 			router.replace('/(tabs)');
 		} catch (error: any) {
-			Alert.alert('Error', error?.message || 'Failed to sign up. Please try again.');
+			const errorMessage = error?.message || 'Failed to sign up. Please try again.';
+			
+			// Check if this is an email confirmation error
+			if (errorMessage.includes('EMAIL_CONFIRMATION_REQUIRED')) {
+				Alert.alert(
+					'Account Created Successfully',
+					'Please check your email to confirm your account. You will be able to log in after confirming your email address.',
+					[
+						{ 
+							text: 'OK', 
+							onPress: () => router.replace('/(auth)') 
+						}
+					]
+				);
+			} else {
+				Alert.alert('Error', errorMessage);
+			}
 		} finally {
 			setIsLoading(false);
 		}
@@ -106,11 +124,10 @@ export default function SignupScreen() {
 							className="flex-1 text-base text-[#333]"
 							value={name}
 							onChangeText={setName}
-							placeholder="Your mail"
+							placeholder="Full Name"
 							placeholderTextColor="#D4A03B"
-							keyboardType="email-address"
-							autoCapitalize="none"
-							autoComplete="email"
+							autoCapitalize="words"
+							autoComplete="name"
 						/>
 					</View>
 
@@ -126,6 +143,20 @@ export default function SignupScreen() {
 							keyboardType="email-address"
 							autoCapitalize="none"
 							autoComplete="email"
+						/>
+					</View>
+
+					{/* Address Input */}
+					<View className="flex-row items-center bg-[#D4A03B]/10 rounded-full mb-4 px-4 h-14">
+						<Ionicons name="location-outline" size={20} color="#D4A03B" style={{ marginRight: 12 }} />
+						<TextInput
+							className="flex-1 text-base text-[#333]"
+							value={address}
+							onChangeText={setAddress}
+							placeholder="Address"
+							placeholderTextColor="#D4A03B"
+							autoCapitalize="words"
+							autoComplete="street-address"
 						/>
 					</View>
 
@@ -191,7 +222,7 @@ export default function SignupScreen() {
 							>
 								<Picker.Item label="Entrepreneur" value="Entrepreneur" color="#333" />
 								<Picker.Item label="Researcher" value="Researcher" color="#333" />
-								<Picker.Item label="SME" value="SME" color="#333" />
+								<Picker.Item label="SMME" value="SMME" color="#333" />
 								<Picker.Item label="Student" value="Student" color="#333" />
 								<Picker.Item label="Investor" value="Investor" color="#333" />
 								<Picker.Item label="Tenant" value="Tenant" color="#333" />
@@ -237,6 +268,32 @@ export default function SignupScreen() {
 							{isLoading ? 'Creating Account...' : 'Sign Up'}
 						</Text>
 					</Button>
+
+					{/* Divider */}
+					<View className="flex-row items-center my-6">
+						<View className="flex-1 h-px bg-[#D4A03B]/20" />
+						<Text className="text-[#8a8a8a] mx-4 text-sm font-medium">
+							Or continue with
+						</Text>
+						<View className="flex-1 h-px bg-[#D4A03B]/20" />
+					</View>
+
+					{/* Google Sign In Button */}
+					<Pressable
+						className="h-14 rounded-full bg-white border-2 border-gray-200 flex-row items-center justify-center mb-6 active:opacity-80 active:scale-95"
+						onPress={async () => {
+							try {
+								await signInWithGoogle();
+							} catch (error: any) {
+								Alert.alert('Error', error?.message || 'Failed to sign in with Google');
+							}
+						}}
+					>
+						<Ionicons name="logo-google" size={20} color="#4285F4" style={{ marginRight: 12 }} />
+						<Text className="text-base font-semibold text-gray-700">
+							Continue with Google
+						</Text>
+					</Pressable>
 
 					{/* Login Link */}
 					<View className="flex-row justify-center items-center">

@@ -23,7 +23,7 @@ function OpportunitiesScreen() {
     switch (user.role) {
       case 'Entrepreneur': return 'Funding';
       case 'Researcher': return 'Funding';
-      case 'SME': return 'Tenders';
+      case 'SMME': return 'Tenders';
       case 'Student': return 'Internships';
       case 'Investor': return 'Funding';
       case 'Tenant': return 'Tenders';

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { tenantService } from '@/services/tenant.service';
-import { smeService } from '@/services/sme.service';
+import { smmmeService } from '@/services/smme.service';
 import { OpportunityService } from '@/services/opportunity.service';
 import { chatService } from '@/services/chat.service';
 import { ResourceService } from '@/services/resource.service';
@@ -23,7 +23,7 @@ export const useFacilitiesSearch = (search: string = '') => {
 export const useBusinessSearch = (search: string = '') => {
   return useQuery({
     queryKey: ['businesses', search],
-    queryFn: () => smeService.getAllSMEsWithServicesProducts(search),
+    queryFn: () => smmmeService.getAllSMMEsWithServicesProducts(search),
   });
 };
 

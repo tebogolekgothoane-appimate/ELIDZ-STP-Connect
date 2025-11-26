@@ -1,17 +1,64 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Pressable, ScrollView, Alert, Linking } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthContext } from '@/hooks/use-auth-context';
-import { withAuthGuard } from '@/components/withAuthGuard';
 import { HeaderAvatar } from '@/components/HeaderAvatar';
+import { verificationService } from '@/services/verification.service';
+import type { SMMEVerification } from '@/services/verification.service';
 
 function ProfileScreen() {
     const { profile, isLoggedIn, isLoading, logout } = useAuthContext();
+    const [verificationStatus, setVerificationStatus] = useState<SMMEVerification | null>(null);
+    const [loadingVerification, setLoadingVerification] = useState(false);
 
     console.log(' ---- profile', profile);
+
+    // Load verification status for SMME users
+    useEffect(() => {
+        if (isLoggedIn && profile?.id && profile?.role === 'SMME') {
+            loadVerificationStatus();
+        }
+    }, [isLoggedIn, profile?.id, profile?.role]);
+
+    const loadVerificationStatus = async () => {
+        if (!profile?.id) return;
+        setLoadingVerification(true);
+        try {
+            const status = await verificationService.getVerificationStatus(profile.id);
+            setVerificationStatus(status);
+        } catch (error) {
+            console.error('Error loading verification status:', error);
+        } finally {
+            setLoadingVerification(false);
+        }
+    };
+
+    const getVerificationStatusColor = (status?: string) => {
+        switch (status) {
+            case 'verified':
+                return '#28A745';
+            case 'rejected':
+                return '#EF4444';
+            case 'pending':
+            default:
+                return '#FFA500';
+        }
+    };
+
+    const getVerificationStatusText = (status?: string) => {
+        switch (status) {
+            case 'verified':
+                return 'Verified';
+            case 'rejected':
+                return 'Rejected';
+            case 'pending':
+            default:
+                return 'Pending Review';
+        }
+    };
 
     const handleLogout = async () => {
         Alert.alert(
@@ -141,6 +188,74 @@ function ProfileScreen() {
                     </View>
                 </View>
 
+                {/* SMME Verification Status Banner */}
+                {isLoggedIn && profile?.role === 'SMME' && (
+                    <View className="mx-6 mb-6">
+                        <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                            <View className="flex-row items-center justify-between mb-3">
+                                <View className="flex-row items-center">
+                                    <View className="w-10 h-10 rounded-full bg-[#002147]/5 items-center justify-center mr-3">
+                                        <Feather name="shield" size={20} color="#002147" />
+                                    </View>
+                                    <View>
+                                        <Text className="text-[#002147] font-bold text-base">Business Verification</Text>
+                                        <Text className="text-gray-500 text-xs mt-0.5">
+                                            {verificationStatus 
+                                                ? getVerificationStatusText(verificationStatus.status)
+                                                : 'Not Submitted'}
+                                        </Text>
+                                    </View>
+                                </View>
+                                {verificationStatus && (
+                                    <View 
+                                        className="px-3 py-1 rounded-full"
+                                        style={{ backgroundColor: `${getVerificationStatusColor(verificationStatus.status)}20` }}
+                                    >
+                                        <Text 
+                                            className="text-xs font-semibold"
+                                            style={{ color: getVerificationStatusColor(verificationStatus.status) }}
+                                        >
+                                            {getVerificationStatusText(verificationStatus.status)}
+                                        </Text>
+                                    </View>
+                                )}
+                            </View>
+                            
+                            {verificationStatus?.status === 'rejected' && verificationStatus.rejection_reason && (
+                                <View className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
+                                    <Text className="text-red-700 text-xs font-medium mb-1">Rejection Reason:</Text>
+                                    <Text className="text-red-600 text-xs">{verificationStatus.rejection_reason}</Text>
+                                </View>
+                            )}
+
+                            {verificationStatus?.status === 'pending' && (
+                                <View className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-3">
+                                    <Text className="text-yellow-800 text-xs">
+                                        Your documents are under review. This process usually takes 24-48 hours.
+                                    </Text>
+                                </View>
+                            )}
+
+                            {verificationStatus?.status === 'verified' && (
+                                <View className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
+                                    <Text className="text-green-800 text-xs">
+                                        Your business has been verified! You now have access to exclusive SMME benefits.
+                                    </Text>
+                                </View>
+                            )}
+
+                            <Pressable
+                                onPress={() => router.push('/smme-verification')}
+                                className="bg-[#002147] py-3 rounded-xl items-center active:opacity-90"
+                            >
+                                <Text className="text-white font-bold text-sm">
+                                    {verificationStatus ? 'Update Documents' : 'Upload Documents'}
+                                </Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                )}
+
                 {/* Premium Banner */}
                 {!profile?.isPremium && isLoggedIn && (
                     <Pressable
@@ -202,4 +317,4 @@ function ProfileScreen() {
     );
 }
 
-export default withAuthGuard(ProfileScreen);
+export default ProfileScreen;

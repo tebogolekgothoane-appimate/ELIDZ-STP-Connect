@@ -337,8 +337,8 @@ export default function DashboardScreen() {
                 </View>
             )}
 
-            {/* Welcome message for guest users */}
-            {!isLoggedIn ? (
+            {/* Welcome message for guest users - only show when not logged in and not loading */}
+            {!isLoggedIn && !isLoading ? (
                 <View className="mx-5 mb-8 p-5 rounded-3xl bg-muted/30 border border-border/50">
                     <Text className="text-lg font-bold mb-2 text-[#002147]">
                         Welcome to ELIDZ-STP! 👋

@@ -9,11 +9,21 @@ import { withAuthGuard } from '@/components/withAuthGuard';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HeaderAvatar } from '@/components/HeaderAvatar';
+import type { Profile } from '@/types';
 
 function EditProfileScreen() {
     const { profile: user, updateProfile } = useAuthContext();
     const [name, setName] = useState(user?.name || '');
     const [email, setEmail] = useState(user?.email || '');
+    const [address, setAddress] = useState<string>('');
+    
+    React.useEffect(() => {
+        if (user) {
+            const profile = user as Profile;
+            // Type assertion needed due to TypeScript cache issue with optional properties
+            setAddress((profile as Profile & { address?: string }).address ?? '');
+        }
+    }, [user]);
     const [organization, setOrganization] = useState(user?.organization || '');
     const [bio, setBio] = useState(user?.bio || '');
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -41,15 +51,25 @@ function EditProfileScreen() {
 
         setIsSaving(true);
         try {
-            await updateProfile({
+            const updates: Record<string, any> = {
                 name: name.trim(),
                 email: email.trim(),
-                organization: organization.trim() || undefined,
-                bio: bio.trim() || undefined,
-                // In a real app, you would upload the image to storage here and get a URL
-                // For now, we'll just simulate it if we had a backend
-                avatar: selectedImage || user?.avatar,
-            });
+            };
+            
+            if (address.trim()) {
+                updates.address = address.trim();
+            }
+            if (organization.trim()) {
+                updates.organization = organization.trim();
+            }
+            if (bio.trim()) {
+                updates.bio = bio.trim();
+            }
+            if (selectedImage || user?.avatar) {
+                updates.avatar = selectedImage || user?.avatar || undefined;
+            }
+            
+            await updateProfile(updates as Partial<Profile>);
             Alert.alert('Success', 'Profile updated successfully', [
                 { text: 'OK', onPress: () => router.back() },
             ]);
@@ -129,6 +149,19 @@ function EditProfileScreen() {
                                 placeholderTextColor="#9CA3AF"
                                 keyboardType="email-address"
                                 autoCapitalize="none"
+                            />
+                        </View>
+
+                        {/* Address Input */}
+                        <View className="mb-5">
+                            <Text className="text-[#002147] text-xs font-bold uppercase mb-2 ml-1">Address</Text>
+                            <TextInput
+                                value={address}
+                                onChangeText={setAddress}
+                                placeholder="Enter your address"
+                                className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-base text-[#002147]"
+                                placeholderTextColor="#9CA3AF"
+                                autoCapitalize="words"
                             />
                         </View>
 

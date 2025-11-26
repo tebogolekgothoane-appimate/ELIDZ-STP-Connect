@@ -2,7 +2,8 @@ export interface Profile {
   id: string;
   name: string;
   email: string;
-  role: 'Entrepreneur' | 'Researcher' | 'SME' | 'Student' | 'Investor' | 'Tenant';
+  role: 'Entrepreneur' | 'Researcher' | 'SMME' | 'Student' | 'Investor' | 'Tenant';
+  address?: string;
   organization?: string;
   bio?: string;
   avatar?: string;

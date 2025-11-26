@@ -11,7 +11,7 @@ import { withAuthGuard } from '@/components/withAuthGuard';
 import { useContactsSearch } from '@/hooks/useSearch';
 import { useDebounce } from '@/hooks/useDebounce';
 
-type UserRole = 'Entrepreneur' | 'Researcher' | 'SME' | 'Student' | 'Investor' | 'Tenant';
+type UserRole = 'Entrepreneur' | 'Researcher' | 'SMME' | 'Student' | 'Investor' | 'Tenant';
 
 function MessagesScreen() {
     const { profile, isLoggedIn } = useAuthContext();
@@ -54,7 +54,7 @@ function MessagesScreen() {
         const roleColors: Record<UserRole, string> = {
             Entrepreneur: '#28A745', // Green
             Researcher: '#002147',   // Navy Blue
-            SME: '#FF6600',          // Orange
+            SMME: '#FF6600',          // Orange
             Student: '#6F42C1',      // Purple
             Investor: '#E83E8C',     // Pink
             Tenant: '#17A2B8',       // Teal
@@ -66,7 +66,7 @@ function MessagesScreen() {
         const roleIcons: Record<UserRole, string> = {
             Entrepreneur: 'zap',
             Researcher: 'search',
-            SME: 'briefcase',
+            SMME: 'briefcase',
             Student: 'book-open',
             Investor: 'trending-up',
             Tenant: 'home',
