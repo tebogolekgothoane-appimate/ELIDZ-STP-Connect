@@ -1,280 +1,327 @@
-import React, { useState } from 'react';
-import { View, Pressable, TextInput, ScrollView, Image } from 'react-native';
-import { Text } from '@/components/ui/text';
-import { useAuthContext } from '@/hooks/use-auth-context';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Image, Pressable, ScrollView, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { HeaderAvatar } from '@/components/HeaderAvatar';
-import { useOpportunitiesSearch, useFacilitiesSearch, useResourcesSearch } from '@/hooks/useSearch';
-import { useDebounce } from '@/hooks/useDebounce';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Text } from '@/components/ui/text';
+import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { PanoramaViewer } from '@/components/mixed-experiences/PanoramaViewer';
+import { FACILITIES, getFacilityById, getTenantsByLocation, getVRTourDataById } from '@/data/vrToursData';
+
+type ViewMode = 'panorama' | 'sections';
+type ScreenMode = 'list' | 'detail';
 
 export default function ServicesScreen() {
-    const { isLoggedIn } = useAuthContext();
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('All');
+	const params = useLocalSearchParams<{ id?: string }>();
+	const [screenMode, setScreenMode] = useState<ScreenMode>('list');
+	const [selectedFacilityId, setSelectedFacilityId] = useState<string | null>(null);
 
-    const debouncedSearch = useDebounce(searchQuery, 300);
+	// Use facility ID from params or selected facility
+	const facilityId = params.id || selectedFacilityId;
 
-    // Fetch data using hooks
-    const { data: fundingOpportunitiesRaw, isLoading: loadingFunding } = useOpportunitiesSearch(debouncedSearch, 'Funding');
-    const { data: facilitiesDataRaw, isLoading: loadingFacilities } = useFacilitiesSearch(debouncedSearch);
-    const { data: resourcesRaw, isLoading: loadingResources } = useResourcesSearch(debouncedSearch);
+	const tourData = useMemo(() => facilityId ? getVRTourDataById(facilityId) : null, [facilityId]);
+	const facilityMeta = useMemo(() => facilityId ? getFacilityById(facilityId) : null, [facilityId]);
+	const tenants = useMemo(
+		() => (facilityMeta ? getTenantsByLocation(facilityMeta.location) : []),
+		[facilityMeta]
+	);
 
-    const fundingOpportunities = fundingOpportunitiesRaw || [];
-    const facilitiesData = facilitiesDataRaw || [];
-    const resources = resourcesRaw || [];
+	const [viewMode, setViewMode] = useState<ViewMode>('panorama');
+	const [currentSection, setCurrentSection] = useState(0);
+	const [currentSceneId, setCurrentSceneId] = useState<string | null>(null);
 
-    const loading = loadingFunding || loadingFacilities || loadingResources;
+	useEffect(() => {
+		setCurrentSection(0);
+		setCurrentSceneId(null);
+		setViewMode('panorama');
+	}, [facilityId]);
 
-    // Map facilities data to display format
-    const productLines = facilitiesData.map((tenant: any) => ({
-        id: tenant.id,
-        name: tenant.name,
-        type: 'Facility',
-        sector: tenant.industry || 'Innovation',
-        location: tenant.location || 'ELIDZ STP',
-        description: tenant.description || 'Innovation center at ELIDZ STP.',
-        image: require('../../../assets/images/connect-solve.png'), // Placeholder or mapped image
-        icon: 'briefcase', // Default icon
-        services: ['Innovation Services', 'Consulting', 'Support'], // Placeholder services
-    }));
+	// Handle facility selection
+	const handleFacilitySelect = (facilityId: string) => {
+		setSelectedFacilityId(facilityId);
+		setScreenMode('detail');
+	};
 
-    const categories = ['All', 'Funding', 'Facilities', 'Resources'];
+	// Handle back to list
+	const handleBackToList = () => {
+		setSelectedFacilityId(null);
+		setScreenMode('list');
+		router.setParams({});
+	};
 
-    const renderSectionHeader = (title: string, action?: () => void) => (
-        <View className="flex-row justify-between items-center mb-4 mt-6 px-6">
-            <Text className="text-xl font-bold text-[#002147] tracking-tight">{title}</Text>
-            {action && (
-                <Pressable onPress={action}>
-                    <Text className="text-[#FF6600] text-sm font-semibold">View All</Text>
-                </Pressable>
-            )}
-        </View>
-    );
+	// Show list of facilities
+	if (screenMode === 'list') {
+		return (
+			<ScrollView className="flex-1 bg-gray-50" contentContainerStyle={{ paddingBottom: 40 }}>
+				{/* Header */}
+				<View className="px-6 pt-12 pb-6 bg-white shadow-sm">
+					<Text className="text-2xl font-bold text-[#002147] mb-2">IDZ STP Services</Text>
+					<Text className="text-gray-600 text-base">
+						Explore our world-class facilities and innovation centers
+					</Text>
+				</View>
 
-    const renderFundingCard = (item: any) => (
-        <Pressable
-            key={item.id}
-            className="bg-white mx-6 mb-4 p-4 rounded-2xl border border-gray-100 shadow-sm active:opacity-95"
-            onPress={() => router.push({ pathname: '/opportunity-detail', params: { id: item.id } })}
-        >
-            <View className="flex-row justify-between items-start mb-2">
-                <View className="bg-green-50 px-3 py-1 rounded-full">
-                    <Text className="text-green-700 text-xs font-bold uppercase">Funding</Text>
-                </View>
-                <Text className="text-gray-400 text-xs">{item.deadline ? new Date(item.deadline).toLocaleDateString() : 'No deadline'}</Text>
-            </View>
-            <Text className="text-[#002147] text-lg font-bold mb-1 leading-tight">{item.title}</Text>
-            <Text className="text-gray-500 text-sm mb-4" numberOfLines={2}>{item.description}</Text>
+				{/* Facilities List */}
+				<View className="px-6 py-4">
+					{FACILITIES.map((facility, index) => (
+						<Pressable
+							key={facility.id}
+							className="bg-white rounded-2xl mb-4 p-4 shadow-sm border border-gray-100 active:opacity-95"
+							onPress={() => handleFacilitySelect(facility.id)}
+						>
+							<View className="flex-row items-center">
+								<View className="w-16 h-16 rounded-xl items-center justify-center mr-4" style={{ backgroundColor: facility.color }}>
+									<Feather name={facility.icon as any} size={28} color="#FFFFFF" />
+								</View>
+								<View className="flex-1">
+									<Text className="text-lg font-bold text-[#002147] mb-1">{facility.name}</Text>
+									<Text className="text-gray-600 text-sm mb-2">{facility.description}</Text>
+									<View className="flex-row items-center">
+										<Text className="text-xs text-gray-500">{facility.location}</Text>
+										<Feather name="chevron-right" size={16} color="#FF6600" style={{ marginLeft: 'auto' }} />
+									</View>
+								</View>
+							</View>
+						</Pressable>
+					))}
+				</View>
+			</ScrollView>
+		);
+	}
 
-            <View className="flex-row items-center justify-between border-t border-gray-50 pt-3">
-                <Text className="text-gray-500 text-xs font-medium">{item.org}</Text>
-                <View className="flex-row items-center">
-                    <Text className="text-[#FF6600] text-sm font-bold mr-1">Apply Now</Text>
-                    <Feather name="arrow-right" size={16} color="#FF6600" />
-                </View>
-            </View>
-        </Pressable>
-    );
+	// Show facility detail with VR tour
+	if (!tourData || !facilityMeta) {
+		return (
+			<ScreenScrollView>
+				<View className="flex-1 items-center justify-center py-12 px-6">
+					<Text className="text-xl font-semibold text-foreground mb-4">Facility unavailable</Text>
+					<Text className="text-center text-muted-foreground mb-6">
+						We could not find the requested facility. Please select a facility from the list.
+					</Text>
+					<Pressable
+						className="px-6 py-3 rounded-full bg-primary"
+						onPress={handleBackToList}
+					>
+						<Text className="text-white font-semibold">Back to Services</Text>
+					</Pressable>
+				</View>
+			</ScreenScrollView>
+		);
+	}
 
-    const renderFacilityCard = (item: any) => (
-        <Pressable
-            key={item.id}
-            className="bg-white mx-6 mb-4 rounded-2xl border border-gray-100 shadow-sm overflow-hidden active:opacity-95"
-            onPress={() => router.push({ pathname: '/center-detail', params: { name: item.name } })}
-        >
-            <View className="h-32 bg-gray-100 relative">
-                <Image
-                    source={item.image}
-                    className="w-full h-full"
-                    resizeMode="cover"
-                />
-                <View className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/60 to-transparent" />
-                <View className="absolute bottom-3 left-3 flex-row items-center">
-                    <View className="bg-white/20 p-1.5 rounded-lg backdrop-blur-md mr-2">
-                        <Feather name={item.icon as any || 'briefcase'} size={14} color="white" />
-                    </View>
-                    <Text className="text-white font-bold shadow-sm">{item.sector}</Text>
-                </View>
-            </View>
-            <View className="p-4">
-                <Text className="text-[#002147] text-lg font-bold mb-1">{item.name}</Text>
-                <Text className="text-gray-500 text-sm mb-3" numberOfLines={2}>{item.description}</Text>
-                <View className="flex-row flex-wrap">
-                    {item.services.slice(0, 2).map((s: string, i: number) => (
-                        <View key={i} className="bg-blue-50 px-2 py-1 rounded-md mr-2 mb-1">
-                            <Text className="text-[#002147] text-[10px] font-medium">{s}</Text>
-                        </View>
-                    ))}
-                </View>
-            </View>
-        </Pressable>
-    );
+	const activeSceneId = currentSceneId ?? tourData.initialSceneId;
+	const activeScene = tourData.scenes[activeSceneId];
+	const hasSections = tourData.sections.length > 0;
+	const section = hasSections ? tourData.sections[currentSection] : undefined;
 
-    const renderResourceCard = (item: any) => (
-        <Pressable
-            key={item.id}
-            className="bg-white mx-6 mb-3 p-4 rounded-xl border border-gray-100 shadow-sm flex-row items-center active:opacity-95"
-            onPress={() => router.push({ pathname: '/resources', params: item.targetCategory ? { category: item.targetCategory } : undefined })}
-        >
-            <View className="w-12 h-12 rounded-full bg-[#002147]/5 justify-center items-center mr-4">
-                <Feather name={item.icon as any || 'file'} size={20} color="#002147" />
-            </View>
-            <View className="flex-1">
-                <Text className="text-[#002147] text-base font-bold mb-0.5">{item.name}</Text>
-                <Text className="text-gray-500 text-xs">{item.description}</Text>
-            </View>
-            <View className="bg-[#FF6600]/10 px-2.5 py-1 rounded-lg">
-                <Text className="text-[#FF6600] text-xs font-bold">{item.available || '0'} Left</Text>
-            </View>
-        </Pressable>
-    );
+	const handleHotspotClick = (hotspotId: string) => {
+		if (!activeScene) return;
+		const hotspot = activeScene.hotspots.find(h => h.id === hotspotId);
+		if (hotspot?.targetSceneId) {
+			setCurrentSceneId(hotspot.targetSceneId);
+		}
+	};
 
-    return (
-        <ScrollView className="flex-1 bg-gray-50" contentContainerStyle={{ paddingBottom: 40 }}>
-            {/* Header */}
-            <LinearGradient
-                colors={['#002147', '#003366']}
-                className="pt-12 pb-6 px-6 rounded-b-[30px] shadow-lg"
-            >
-                <View className="flex-row justify-between items-center">
-                    <Text className="text-white text-3xl font-bold mb-2">Services</Text>
-                    <HeaderAvatar />
-                </View>
-                <Text className="text-white/80 text-base">
-                    Access world-class facilities and funding opportunities.
-                </Text>
+	return (
+		<View className="flex-1 bg-background">
+			<View className="px-6 pt-12 pb-6 flex-row items-center justify-between" style={{ backgroundColor: tourData.color }}>
+				<Pressable onPress={handleBackToList} className="p-2 bg-white/20 rounded-full">
+					<Feather name="arrow-left" size={24} color="#FFFFFF" />
+				</Pressable>
+				<View className="items-center">
+					<Text className="text-white text-lg font-bold">{tourData.name}</Text>
+					<Text className="text-white/80 text-xs">
+						{viewMode === 'panorama' && activeScene ? activeScene.title : 'Virtual Tour Details'}
+					</Text>
+				</View>
+				<View className="flex-row gap-2">
+					<Pressable
+						className={`p-2 rounded-full ${viewMode === 'panorama' ? 'bg-white text-primary' : 'bg-white/20'}`}
+						onPress={() => setViewMode('panorama')}
+					>
+						<Feather name="globe" size={20} color={viewMode === 'panorama' ? tourData.color : '#FFFFFF'} />
+					</Pressable>
+					<Pressable
+						className={`p-2 rounded-full ${viewMode === 'sections' ? 'bg-white text-primary' : 'bg-white/20'}`}
+						onPress={() => hasSections && setViewMode('sections')}
+						disabled={!hasSections}
+					>
+						<Feather name="list" size={20} color={viewMode === 'sections' ? tourData.color : '#FFFFFF'} />
+					</Pressable>
+				</View>
+			</View>
 
-                {/* Search Bar */}
-                <View className="flex-row items-center bg-white/10 border border-white/20 h-12 rounded-xl px-4 mt-6 backdrop-blur-sm">
-                    <Feather name="search" size={20} color="rgba(255,255,255,0.7)" />
-                    <TextInput
-                        className="flex-1 ml-3 text-base text-white"
-                        placeholder="Search services..."
-                        placeholderTextColor="rgba(255,255,255,0.5)"
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                    />
-                </View>
-            </LinearGradient>
+			{viewMode === 'panorama' && activeScene ? (
+				<PanoramaViewer
+					imageUrl={activeScene.image}
+					title={activeScene.title}
+					hotspots={activeScene.hotspots}
+					onHotspotClick={handleHotspotClick}
+				/>
+			) : (
+				<ScrollView className="flex-1 px-6 py-6" showsVerticalScrollIndicator={false}>
+					{section ? (
+						<View className="bg-card rounded-2xl p-6 shadow-sm border border-border mb-6">
+							<View className="flex-row justify-between items-center mb-4 pb-4 border-b border-border">
+								<View>
+									<Text className="text-sm text-muted-foreground uppercase font-semibold">Current Location</Text>
+									<Text className="text-2xl font-bold text-foreground mt-1">{section.title}</Text>
+								</View>
+								<View className="bg-primary/10 px-3 py-1 rounded-full">
+									<Text className="text-primary font-bold">
+										{currentSection + 1}/{tourData.sections.length}
+									</Text>
+								</View>
+							</View>
 
-            {/* Categories */}
-            <View className="mt-6 mb-2">
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24 }}>
-                    {categories.map((category) => (
-                        <Pressable
-                            key={category}
-                            className={`px-5 py-2.5 rounded-full border mr-3 shadow-sm ${selectedCategory === category
-                                ? 'bg-[#002147] border-[#002147]'
-                                : 'bg-white border-gray-200'
-                                }`}
-                            onPress={() => setSelectedCategory(category)}
-                        >
-                            <Text className={`text-sm font-semibold ${selectedCategory === category ? 'text-white' : 'text-gray-600'
-                                }`}>
-                                {category}
-                            </Text>
-                        </Pressable>
-                    ))}
-                </ScrollView>
-            </View>
+							<Text className="text-base text-muted-foreground leading-6 mb-6">
+								{section.description}
+							</Text>
 
-            {loading ? (
-                <Text className="text-center text-gray-500 mt-10">Loading services...</Text>
-            ) : (
-                <View>
-                    {/* Content - ALL */}
-                    {selectedCategory === 'All' && !searchQuery && (
-                        <>
-                            {/* Funding Section */}
-                            {fundingOpportunities && fundingOpportunities.length > 0 && (
-                                <>
-                                    {renderSectionHeader('Funding Opportunities', () => setSelectedCategory('Funding'))}
-                                    {fundingOpportunities.slice(0, 2).map(renderFundingCard)}
-                                </>
-                            )}
+							<Text className="text-lg font-semibold text-foreground mb-4">Key Features</Text>
+							{section.details.map((detail, index) => (
+								<View key={index} className="flex-row items-center mb-3">
+									<View className="w-2 h-2 rounded-full mr-3" style={{ backgroundColor: tourData.color }} />
+									<Text className="text-base text-foreground flex-1">{detail}</Text>
+								</View>
+							))}
+						</View>
+					) : (
+						<View className="bg-card rounded-2xl p-6 shadow-sm border border-border mb-6">
+							<Text className="text-lg font-semibold text-foreground mb-2">Tour Details coming soon</Text>
+							<Text className="text-muted-foreground">
+								This facility does not have sectioned details yet. Explore the panorama to view the space.
+							</Text>
+						</View>
+					)}
 
-                            {/* Facilities Section */}
-                            {productLines && productLines.length > 0 && (
-                                <>
-                                    {renderSectionHeader('Centers of Excellence', () => setSelectedCategory('Facilities'))}
-                                    {productLines.slice(0, 2).map(renderFacilityCard)}
-                                </>
-                            )}
+					<View className="mb-6">
+						<Text className="text-lg font-semibold text-foreground mb-4">Tenants in this Wing</Text>
+						{tenants.length === 0 && (
+							<Text className="text-muted-foreground">No tenants listed for this facility.</Text>
+						)}
+						{tenants.map(tenant => (
+							<View key={tenant.id} className="bg-card p-4 rounded-xl mb-3 flex-row items-center border border-border">
+								<View className="w-10 h-10 bg-primary/10 rounded-full items-center justify-center mr-3">
+									<Text className="text-primary font-bold">{tenant.name.charAt(0)}</Text>
+								</View>
+								<View className="flex-1">
+									<Text className="font-semibold text-foreground">{tenant.name}</Text>
+									<Text className="text-xs text-muted-foreground">{tenant.description}</Text>
+								</View>
+							</View>
+						))}
+					</View>
+				</ScrollView>
+			)}
 
-                            {/* Resources Section */}
-                            {resources && resources.length > 0 && (
-                                <>
-                                    {renderSectionHeader('Available Resources', () => setSelectedCategory('Resources'))}
-                                    {resources.map(renderResourceCard)}
-                                </>
-                            )}
-                        </>
-                    )}
+			{/* Facility Services & Products Section */}
+			{viewMode === 'sections' && (
+				<ScrollView className="flex-1 px-6 py-6" showsVerticalScrollIndicator={false}>
+					{/* Facility Overview */}
+					<View className="bg-card rounded-2xl p-6 shadow-sm border border-border mb-6">
+						<View className="flex-row items-center mb-4">
+							<View className="w-12 h-12 rounded-xl items-center justify-center mr-3" style={{ backgroundColor: facilityMeta.color }}>
+								<Feather name={facilityMeta.icon as any} size={24} color="#FFFFFF" />
+							</View>
+							<View className="flex-1">
+								<Text className="text-xl font-bold text-foreground">{facilityMeta.name}</Text>
+								<Text className="text-sm text-muted-foreground">{facilityMeta.location}</Text>
+							</View>
+						</View>
+						<Text className="text-base text-muted-foreground leading-6">
+							{facilityMeta.description}
+						</Text>
+					</View>
 
-                    {/* Filtered Content */}
-                    {(selectedCategory !== 'All' || searchQuery) && (
-                        <View className="mt-4">
-                            {(selectedCategory === 'All' || selectedCategory === 'Funding') && fundingOpportunities?.length > 0 && (
-                                <>
-                                    {searchQuery && <Text className="px-6 mb-2 text-gray-500 font-medium">Funding</Text>}
-                                    {fundingOpportunities.map(renderFundingCard)}
-                                </>
-                            )}
+					{/* Services & Products */}
+					{section ? (
+						<View className="bg-card rounded-2xl p-6 shadow-sm border border-border mb-6">
+							<View className="flex-row justify-between items-center mb-4 pb-4 border-b border-border">
+								<View>
+									<Text className="text-sm text-muted-foreground uppercase font-semibold">Services & Products</Text>
+									<Text className="text-2xl font-bold text-foreground mt-1">{section.title}</Text>
+								</View>
+								<View className="bg-primary/10 px-3 py-1 rounded-full">
+									<Text className="text-primary font-bold">
+										{currentSection + 1}/{tourData.sections.length}
+									</Text>
+								</View>
+							</View>
 
-                            {(selectedCategory === 'All' || selectedCategory === 'Facilities') && productLines?.length > 0 && (
-                                <>
-                                    {searchQuery && <Text className="px-6 mb-2 mt-4 text-gray-500 font-medium">Facilities</Text>}
-                                    {productLines.map(renderFacilityCard)}
-                                </>
-                            )}
+							<Text className="text-base text-muted-foreground leading-6 mb-6">
+								{section.description}
+							</Text>
 
-                            {(selectedCategory === 'All' || selectedCategory === 'Resources') && resources?.length > 0 && (
-                                <>
-                                    {searchQuery && <Text className="px-6 mb-2 mt-4 text-gray-500 font-medium">Resources</Text>}
-                                    {resources.map(renderResourceCard)}
-                                </>
-                            )}
+							<Text className="text-lg font-semibold text-foreground mb-4">Key Services</Text>
+							{section.details.map((detail, index) => (
+								<View key={index} className="flex-row items-center mb-3">
+									<View className="w-2 h-2 rounded-full mr-3" style={{ backgroundColor: tourData.color }} />
+									<Text className="text-base text-foreground flex-1">{detail}</Text>
+								</View>
+							))}
+						</View>
+					) : (
+						<View className="bg-card rounded-2xl p-6 shadow-sm border border-border mb-6">
+							<Text className="text-lg font-semibold text-foreground mb-2">Services coming soon</Text>
+							<Text className="text-muted-foreground">
+								This facility does not have detailed services yet. Explore the panorama to view the space.
+							</Text>
+						</View>
+					)}
 
-                            {/* Empty State */}
-                            {((!fundingOpportunities?.length && !productLines?.length && !resources?.length)) && (
-                                <View className="items-center py-12 px-6">
-                                    <Feather name="search" size={48} color="#CBD5E0" />
-                                    <Text className="text-gray-400 text-base mt-4 text-center font-medium">
-                                        No results found for "{searchQuery}"
-                                    </Text>
-                                </View>
-                            )}
-                        </View>
-                    )}
-                </View>
-            )}
+					{/* Tenants */}
+					<View className="mb-6">
+						<Text className="text-lg font-semibold text-foreground mb-4">Tenants in this Facility</Text>
+						{tenants.length === 0 && (
+							<Text className="text-muted-foreground">No tenants listed for this facility.</Text>
+						)}
+						{tenants.map(tenant => (
+							<View key={tenant.id} className="bg-card p-4 rounded-xl mb-3 flex-row items-center border border-border">
+								<View className="w-10 h-10 bg-primary/10 rounded-full items-center justify-center mr-3">
+									<Text className="text-primary font-bold">{tenant.name.charAt(0)}</Text>
+								</View>
+								<View className="flex-1">
+									<Text className="font-semibold text-foreground">{tenant.name}</Text>
+									<Text className="text-xs text-muted-foreground">{tenant.description}</Text>
+								</View>
+							</View>
+						))}
+					</View>
+				</ScrollView>
+			)}
 
-            {/* CTA for Guests */}
-            {!isLoggedIn && (
-                <View className="mx-6 mt-6 mb-6 p-5 rounded-2xl bg-white border border-[#002147]/10 shadow-sm">
-                    <View className="flex-row items-center mb-3">
-                        <View className="bg-[#FF6600]/10 p-2 rounded-full mr-3">
-                            <Feather name="lock" size={18} color="#FF6600" />
-                        </View>
-                        <Text className="text-[#002147] text-lg font-bold">
-                            Unlock Full Access
-                        </Text>
-                    </View>
-                    <Text className="text-gray-500 text-sm mb-5 leading-relaxed">
-                        Create an account to apply for funding, book resources, and connect with partners.
-                    </Text>
-                    <Pressable
-                        className="bg-[#002147] py-3 px-6 rounded-xl items-center active:opacity-90"
-                        onPress={() => router.push('/(auth)/auth-choice')}
-                    >
-                        <Text className="text-white font-bold">
-                            Sign Up Now
-                        </Text>
-                    </Pressable>
-                </View>
-            )}
-        </ScrollView>
-    );
+			{/* Section Navigation */}
+			{viewMode === 'sections' && hasSections && (
+				<View className="flex-row justify-between items-center p-6 border-t border-border bg-background">
+					<Pressable
+						className={`flex-row items-center ${currentSection === 0 ? 'opacity-50' : 'active:opacity-70'}`}
+						onPress={() => setCurrentSection(Math.max(0, currentSection - 1))}
+						disabled={currentSection === 0}
+					>
+						<Feather name="chevron-left" size={24} color="rgb(var(--foreground))" />
+						<Text className="ml-2 font-semibold text-foreground">Previous</Text>
+					</Pressable>
+
+					<View className="flex-row gap-2">
+						{tourData.sections.map((_, index) => (
+							<View
+								key={index}
+								className={`w-2 h-2 rounded-full ${index === currentSection ? '' : 'bg-muted'}`}
+								style={index === currentSection ? { backgroundColor: tourData.color } : {}}
+							/>
+						))}
+					</View>
+
+					<Pressable
+						className={`flex-row items-center ${currentSection === tourData.sections.length - 1 ? 'opacity-50' : 'active:opacity-70'}`}
+						onPress={() => setCurrentSection(Math.min(tourData.sections.length - 1, currentSection + 1))}
+						disabled={currentSection === tourData.sections.length - 1}
+					>
+						<Text className="mr-2 font-semibold text-foreground">Next</Text>
+						<Feather name="chevron-right" size={24} color="rgb(var(--foreground))" />
+					</Pressable>
+				</View>
+			)}
+		</View>
+	);
 }
