@@ -2,16 +2,21 @@
 
 import * as React from "react"
 import {
-  AudioWaveform,
+  BarChart3,
+  Bell,
   BookOpen,
   Bot,
-  Command,
-  Frame,
+  Briefcase,
+  Building2,
+  Car,
+  Cpu,
+  FlaskConical,
   GalleryVerticalEnd,
-  Map,
-  PieChart,
+  LayoutDashboard,
+  PenTool,
   Settings2,
-  SquareTerminal,
+  Users,
+  Zap,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -29,86 +34,92 @@ import {
 // This is sample data.
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+    name: "Admin User",
+    email: "admin@elidz.co.za",
+    avatar: "/avatars/admin.jpg",
   },
   teams: [
     {
-      name: "Acme Inc",
+      name: "ELIDZ Admin",
       logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
+      plan: "Science & Tech Park",
     },
   ],
   navMain: [
     {
-      title: "Playground",
-      url: "#",
-      icon: SquareTerminal,
+      title: "Dashboard",
+      url: "/dashboard",
+      icon: LayoutDashboard,
       isActive: true,
+    },
+    {
+      title: "User Management",
+      url: "#",
+      icon: Users,
       items: [
         {
-          title: "History",
+          title: "All Users",
           url: "#",
         },
         {
-          title: "Starred",
+          title: "Registrations",
           url: "#",
         },
         {
-          title: "Settings",
+          title: "User Roles",
           url: "#",
         },
       ],
     },
     {
-      title: "Models",
+      title: "Opportunities",
       url: "#",
-      icon: Bot,
+      icon: Briefcase,
       items: [
         {
-          title: "Genesis",
+          title: "View Opportunities",
           url: "#",
         },
         {
-          title: "Explorer",
+          title: "Post Opportunity",
           url: "#",
         },
         {
-          title: "Quantum",
+          title: "Funding Info",
           url: "#",
         },
       ],
     },
     {
-      title: "Documentation",
+      title: "Communication",
       url: "#",
-      icon: BookOpen,
+      icon: Bell,
       items: [
         {
-          title: "Introduction",
+          title: "Send Alerts",
           url: "#",
         },
         {
-          title: "Get Started",
+          title: "Message Center",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Reports",
+      url: "#",
+      icon: BarChart3,
+      items: [
+        {
+          title: "User Demographics",
           url: "#",
         },
         {
-          title: "Tutorials",
+          title: "Product Line Visits",
           url: "#",
         },
         {
-          title: "Changelog",
+          title: "System Usage",
           url: "#",
         },
       ],
@@ -123,15 +134,11 @@ const data = {
           url: "#",
         },
         {
-          title: "Team",
+          title: "Security",
           url: "#",
         },
         {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
+          title: "Billing & Model",
           url: "#",
         },
       ],
@@ -139,19 +146,29 @@ const data = {
   ],
   projects: [
     {
-      name: "Design Engineering",
+      name: "Food & Water Lab",
       url: "#",
-      icon: Frame,
+      icon: FlaskConical,
     },
     {
-      name: "Sales & Marketing",
+      name: "Design Centre",
       url: "#",
-      icon: PieChart,
+      icon: PenTool,
     },
     {
-      name: "Travel",
+      name: "Digital Hub",
       url: "#",
-      icon: Map,
+      icon: Cpu,
+    },
+    {
+      name: "Automotive & Mfg",
+      url: "#",
+      icon: Car,
+    },
+    {
+      name: "Renewable Energy",
+      url: "#",
+      icon: Zap,
     },
   ],
 }
@@ -173,3 +190,4 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     </Sidebar>
   )
 }
+
