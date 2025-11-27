@@ -7,15 +7,15 @@ import { Platform } from 'react-native';
 // Orange: Used for "idz" text and "SCIENCE & TECHNOLOGY PARK" text - RGB(255, 102, 0)
 const ELIDZ_BRAND_COLORS = {
     // Primary Brand Colors - EXACT Blue from logo
-    primary: '#002147',          // ELIDZ Navy Blue - EXACT logo blue (RGB: 0, 33, 71)
-    primaryDark: '#001A36',      // Darker navy for dark mode
+    primary: '#1F4D8F',          // Updated lighter ELIDZ blue
+    primaryDark: '#173B6A',      // Darker variant for dark mode
     secondary: '#FF6600',        // ELIDZ Orange - EXACT logo orange (RGB: 255, 102, 0)
     secondaryDark: '#CC5200',    // Darker orange for dark mode
     accent: '#FF6600',           // ELIDZ Orange - EXACT logo orange (RGB: 255, 102, 0)
     accentDark: '#CC5200',       // Darker orange for dark mode
 
     // Extended Brand Palette
-    blue: '#002147',             // ELIDZ Navy Blue - EXACT logo blue (RGB: 0, 33, 71)
+    blue: '#1F4D8F',             // Updated lighter ELIDZ blue
     green: '#28A745',
     orange: '#FF6600',           // ELIDZ Orange - EXACT logo orange (RGB: 255, 102, 0)
     purple: '#6F42C1',
@@ -36,7 +36,7 @@ const ELIDZ_BRAND_COLORS = {
     // User Role Colors (for networking)
     role: {
         entrepreneur: '#28A745',    // Green
-        researcher: '#002147',      // ELIDZ Navy Blue
+        researcher: '#1F4D8F',      // Updated ELIDZ Blue
         sme: '#FF6600',             // ELIDZ Orange
         student: '#6F42C1',         // Purple
         investor: '#E83E8C',        // Pink
