@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, TextInput, Pressable, ScrollView, Alert } from 'react-native';
+import { View, TextInput, Pressable, ScrollView, Alert, Dimensions } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { useAuthContext } from '../../hooks/use-auth-context';
 import { Feather } from '@expo/vector-icons';
@@ -12,6 +12,13 @@ import { useContactsSearch } from '@/hooks/useSearch';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
+import { HeaderAvatar } from '@/components/HeaderAvatar';
+import { HeaderNotificationIcon } from '@/components/HeaderNotificationIcon';
+import { useColorScheme } from '@/hooks/use-theme-color';
+import { NAV_THEME } from '@/theme/colors';
+
+const { width } = Dimensions.get('window');
+const isTablet = width >= 768;
 
 type UserRole = 'Entrepreneur' | 'Researcher' | 'SMME' | 'Student' | 'Investor' | 'Tenant';
 
@@ -19,6 +26,8 @@ type TabType = 'messages' | 'requests' | 'discover';
 
 function MessagesScreen() {
     const { profile, isLoggedIn } = useAuthContext();
+    const { colorScheme } = useColorScheme();
+    const theme = NAV_THEME[colorScheme];
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedRole, setSelectedRole] = useState<UserRole | 'All'>('All');
     const [activeTab, setActiveTab] = useState<TabType>('messages');
@@ -352,16 +361,18 @@ function MessagesScreen() {
                     {contact.connectionStatus === 'pending_received' && (
                         <View className="flex-row ml-2">
                             <Pressable
-                                className="w-8 h-8 rounded-full bg-green-500 justify-center items-center mr-2"
+                                className="w-10 h-10 rounded-full bg-green-500 justify-center items-center mr-2"
                                 onPress={() => handleAcceptConnection(contact.connectionId!, contact.name)}
+                                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                             >
-                                <Feather name="check" size={16} color="white" />
+                                <Feather name="check" size={18} color="white" />
                             </Pressable>
                             <Pressable
-                                className="w-8 h-8 rounded-full bg-red-500 justify-center items-center"
+                                className="w-10 h-10 rounded-full bg-red-500 justify-center items-center"
                                 onPress={() => handleDeclineConnection(contact.connectionId!, contact.name)}
+                                hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
                             >
-                                <Feather name="x" size={16} color="white" />
+                                <Feather name="x" size={18} color="white" />
                             </Pressable>
                         </View>
                     )}
@@ -396,15 +407,27 @@ function MessagesScreen() {
     if (!isLoggedIn) {
          return (
             <View className="flex-1 bg-background">
-                 <LinearGradient
-                    colors={['#002147', '#003366']}
-                    className="pt-12 pb-6 px-6 rounded-b-[30px] shadow-lg mb-6"
+                 <View
+                    className="pt-12 pb-6 mb-6"
+                    style={{ paddingHorizontal: isTablet ? 24 : 24 }}
                 >
-                    <Text className="text-white text-3xl font-bold mb-2">Network</Text>
-                    <Text className="text-white/80 text-base">
-                        Connect with innovators and partners.
-                    </Text>
-                 </LinearGradient>
+                    <View 
+                        style={{ maxWidth: isTablet ? 1200 : '100%', alignSelf: 'center', width: '100%' }}
+                    >
+                        <View className="flex-row items-center justify-end mb-2">
+                            <HeaderNotificationIcon />
+                            <HeaderAvatar />
+                        </View>
+                        <View className="items-start mb-2">
+                            <Text className="text-foreground font-semibold" style={{ fontSize: isTablet ? 22 : 20 }}>
+                                Network
+                            </Text>
+                            <Text className="text-muted-foreground" style={{ fontSize: isTablet ? 14 : 14 }}>
+                                Connect with innovators and partners.
+                            </Text>
+                        </View>
+                    </View>
+                 </View>
                  <View className="mx-5 p-5 rounded-2xl bg-card border border-border shadow-sm">
                     <View className="flex-row items-center mb-2">
                         <View className="bg-[#FF6600]/10 p-2 rounded-full mr-3">
@@ -434,30 +457,53 @@ function MessagesScreen() {
         <View className="flex-1 bg-background">
             <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
                 {/* Header */}
-                <LinearGradient
-                    colors={['#002147', '#003366']}
-                    className="pt-12 pb-6 px-6 rounded-b-[30px] shadow-lg"
+                <View
+                    className="pt-12 pb-6"
+                    style={{ paddingHorizontal: isTablet ? 24 : 24 }}
                 >
-                    <Text className="text-white text-3xl font-bold mb-2">Network</Text>
-                    <Text className="text-white/80 text-base">
-                        Connect with innovators and partners.
-                    </Text>
+                    <View 
+                        style={{ maxWidth: isTablet ? 1200 : '100%', alignSelf: 'center', width: '100%' }}
+                    >
+                        <View className="flex-row items-center justify-end mb-2">
+                            <HeaderNotificationIcon />
+                            <HeaderAvatar />
+                        </View>
+                        <View className="items-start mb-2">
+                            <Text className="text-foreground font-semibold" style={{ fontSize: isTablet ? 22 : 20 }}>
+                                Network
+                            </Text>
+                            <Text className="text-muted-foreground" style={{ fontSize: isTablet ? 14 : 14 }}>
+                                Connect with innovators and partners.
+                            </Text>
+                        </View>
+                    </View>
 
                     {/* Search Bar */}
-                    <View className="flex-row items-center bg-white/10 border border-white/20 h-12 rounded-xl px-4 mt-6 backdrop-blur-sm">
-                        <Feather name="search" size={20} color="rgba(255,255,255,0.7)" />
+                    <View 
+                        className="flex-row items-center bg-muted border border-border h-12 rounded-xl px-4 mt-6"
+                        style={{ maxWidth: isTablet ? 1200 : '100%', alignSelf: 'center', width: '100%' }}
+                    >
+                        <Feather name="search" size={20} color="#6C757D" />
                         <TextInput
-                            className="flex-1 ml-3 text-base text-white"
+                            className="flex-1 ml-3 text-base text-foreground"
                             placeholder="Search people, companies..."
-                            placeholderTextColor="rgba(255,255,255,0.5)"
+                            placeholderTextColor="#9CA3AF"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                         />
                     </View>
-                </LinearGradient>
+                </View>
 
                 {/* Tabs */}
-                <View className="mt-6 mx-5 mb-4">
+                <View 
+                  className="mt-6 mb-4"
+                  style={{ 
+                    paddingHorizontal: isTablet ? 24 : 20,
+                    maxWidth: isTablet ? 1200 : '100%',
+                    alignSelf: 'center',
+                    width: '100%'
+                  }}
+                >
                     <View className="flex-row bg-card rounded-xl p-1 border border-border shadow-sm">
                         <Pressable
                             className={`flex-1 py-3 rounded-lg items-center ${activeTab === 'messages' ? 'bg-[#002147]' : ''}`}
@@ -551,7 +597,15 @@ function MessagesScreen() {
                         <View className="mb-6">
                             {connectedContacts.length > 0 ? (
                                 <>
-                                    <View className="flex-row items-center justify-between mx-5 mb-3">
+                                    <View 
+                                      className="flex-row items-center justify-between mb-3"
+                                      style={{ 
+                                        paddingHorizontal: isTablet ? 24 : 20,
+                                        maxWidth: isTablet ? 1200 : '100%',
+                                        alignSelf: 'center',
+                                        width: '100%'
+                                      }}
+                                    >
                                         <Text className="text-lg font-bold text-foreground">
                                             Messages
                                         </Text>
@@ -559,7 +613,14 @@ function MessagesScreen() {
                                             <Text className="text-xs font-bold text-foreground">{connectedContacts.length}</Text>
                                         </View>
                                     </View>
-                                    <View className="mx-5">
+                                    <View 
+                                      style={{ 
+                                        paddingHorizontal: isTablet ? 24 : 20,
+                                        maxWidth: isTablet ? 1200 : '100%',
+                                        alignSelf: 'center',
+                                        width: '100%'
+                                      }}
+                                    >
                                         {connectedContacts.map(renderContact)}
                                     </View>
                                 </>
