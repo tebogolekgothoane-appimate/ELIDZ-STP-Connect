@@ -9,45 +9,45 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Cpu, Wifi, Server } from "lucide-react"
+import { Zap, Sun, Wind } from "lucide-react"
 
-export default function DigitalHubPage() {
+export default function RenewableEnergyPage() {
     return (
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
              <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold tracking-tight">Digital Hub</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Renewable Energy</h1>
                 <Button>Manage Project</Button>
             </div>
             
             <div className="grid gap-4 md:grid-cols-3">
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Connected Devices</CardTitle>
-                        <Wifi className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">Energy Generated</CardTitle>
+                        <Zap className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">5,200+</div>
-                        <p className="text-xs text-muted-foreground">IoT Network</p>
+                        <div className="text-2xl font-bold">12.5 MWh</div>
+                        <p className="text-xs text-muted-foreground">Daily average</p>
                     </CardContent>
                 </Card>
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Data Processed</CardTitle>
-                        <Server className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">Solar Capacity</CardTitle>
+                        <Sun className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">45 TB</div>
-                        <p className="text-xs text-muted-foreground">Per month</p>
+                        <div className="text-2xl font-bold">2.4 MW</div>
+                        <p className="text-xs text-muted-foreground">Installed</p>
                     </CardContent>
                 </Card>
                  <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Startups Incubated</CardTitle>
-                        <Cpu className="h-4 w-4 text-muted-foreground" />
+                        <CardTitle className="text-sm font-medium">Wind Potential</CardTitle>
+                        <Wind className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">18</div>
-                        <p className="text-xs text-muted-foreground">Currently active</p>
+                        <div className="text-2xl font-bold">High</div>
+                        <p className="text-xs text-muted-foreground">Feasibility confirmed</p>
                     </CardContent>
                 </Card>
             </div>
@@ -55,35 +55,34 @@ export default function DigitalHubPage() {
             <Tabs defaultValue="overview" className="space-y-4">
                 <TabsList>
                     <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="infrastructure">Infrastructure</TabsTrigger>
+                    <TabsTrigger value="projects">Projects</TabsTrigger>
                 </TabsList>
                 <TabsContent value="overview" className="space-y-4">
                      <Card>
                         <CardHeader>
-                            <CardTitle>About the Hub</CardTitle>
+                            <CardTitle>About the Sector</CardTitle>
                             <CardDescription>
-                                Driving digital transformation through ICT innovation and incubation.
+                                Facilitating the transition to green energy and sustainable industrial practices.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <p className="text-sm text-muted-foreground">
-                                The Digital Hub provides a collaborative ecosystem for tech startups and established companies. We offer access to high-speed connectivity, cloud resources, and specialized labs for VR/AR, AI, and IoT development.
+                                The Renewable Energy sector at ELIDZ focuses on solar PV manufacturing, component assembly, and energy storage solutions. We are also exploring green hydrogen opportunities.
                             </p>
                         </CardContent>
                     </Card>
                 </TabsContent>
-                <TabsContent value="infrastructure" className="space-y-4">
+                <TabsContent value="projects" className="space-y-4">
                      <Card>
                         <CardHeader>
-                            <CardTitle>Infrastructure Highlights</CardTitle>
+                            <CardTitle>Active Projects</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <ul className="list-disc pl-4 text-sm text-muted-foreground space-y-2">
-                                <li>Tier 3 Data Centre Access</li>
-                                <li>Gigabit Fiber Connectivity</li>
-                                <li>IoT LoRaWAN Network</li>
-                                <li>VR/AR Experience Lab</li>
-                                <li>Co-working Spaces</li>
+                                <li>Rooftop Solar PV Rollout</li>
+                                <li>Battery Energy Storage System (BESS) Pilot</li>
+                                <li>Electric Vehicle Charging Infrastructure</li>
+                                <li>Energy Efficiency Audits for Tenants</li>
                             </ul>
                         </CardContent>
                     </Card>
@@ -92,3 +91,4 @@ export default function DigitalHubPage() {
         </div>
     );
 }
+
