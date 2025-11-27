@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, Pressable, Alert, Dimensions, TouchableOpacity, Image } from 'react-native';
+import { View, TextInput, Pressable, Alert, Dimensions, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Text } from '@/components/ui/text';
@@ -7,14 +7,13 @@ import { ScreenKeyboardAwareScrollView } from '@/components/ScreenKeyboardAwareS
 import { useAuthContext } from '@/hooks/use-auth-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Stars } from '@/components/Stars';
 import { Button } from '@/components/ui/button';
 
 const { width, height } = Dimensions.get('window');
 
 export default function SignupScreen() {
-	const { signup, signInWithGoogle } = useAuthContext();
+	const { signup } = useAuthContext();
 	const [name, setName] = useState('');
 	const [email, setEmail] = useState('');
 	const [province, setProvince] = useState('Eastern Cape');
@@ -211,8 +210,12 @@ export default function SignupScreen() {
 		}
 	}
 
+	const ACCENT = '#D4A03B';
+	const INPUT_BG = 'rgba(212, 160, 59, 0.08)';
+	const INPUT_BORDER = 'rgba(212, 160, 59, 0.25)';
+
 	return (
-		<View className="flex-1 bg-background">
+		<View className="flex-1 bg-white">
 			<LinearGradient
 				colors={['#0a1628', '#122a4d', '#1a3a5c']}
 				className="absolute inset-0"
@@ -222,7 +225,7 @@ export default function SignupScreen() {
 			/>
 			<Stars />
 			{/* Header Section */}
-			<View className="px-4 pt-1" style={{ height: height * 0.25 }}>
+			<View className="px-6 pt-1 w-full" style={{ height: height * 0.25 }}>
 				{/* Back Button */}
 				<TouchableOpacity
 					className="w-10 h-10 rounded-full flex-row justify-center items-center"
@@ -234,47 +237,39 @@ export default function SignupScreen() {
 				</TouchableOpacity>
 
 				{/* Title */}
-				<View className="items-center">
-					<Text className="text-3xl font-bold text-white mb-2">Register</Text>
-					<Text className="text-white/80 mb-4">Create a new account</Text>
-					<Image
-						source={require('../../../assets/logos/blue text-idz logo.png')}
-						style={{ width: 300, height: 130 }}
-						resizeMode="contain"
-					/>
+				<View className="items-center mt-4">
+					<Text className="text-3xl font-bold text-white mb-2">Create Account</Text>
+					<Text className="text-white/80 text-base">Join the ELIDZ-STP community</Text>
 				</View>
 			</View>
 
-			<ScreenKeyboardAwareScrollView
-				contentContainerClassName="flex-grow"
-				style={{ zIndex: 2 }}
-			>
-				{/* Form Fields */}
-				<View className="w-full px-6 pb-10 -mt-16 pt-12 " style={{ marginTop: -70, paddingTop: 50 }}>
+			<View className="flex-1 z-10 w-full">
+				<ScreenKeyboardAwareScrollView contentContainerClassName="flex-grow">
+					{/* Form Container */}
+					<View className="flex-1 bg-white w-full px-6 pb-10 pt-12 rounded-t-[50px] -mt-16">
 					{/* Full Name Input */}
-					<View className="hidden" />
-					<View className="flex-row items-center bg-input rounded-full mb-4 px-4 h-14 border border-border">
-						<Ionicons name="person-outline" size={20} color="#FF6600" style={{ marginRight: 12 }} />
+					<View className="flex-row items-center rounded-full mb-4 px-4 h-14 border" style={{ backgroundColor: INPUT_BG, borderColor: INPUT_BORDER }}>
+						<Ionicons name="person-outline" size={20} color={ACCENT} style={{ marginRight: 12 }} />
 						<TextInput
-							className="flex-1 text-base text-foreground"
+							className="flex-1 text-base text-[#333]"
 							value={name}
 							onChangeText={setName}
 							placeholder="Full Name"
-							placeholderTextColor="#9CA3AF"
+							placeholderTextColor={ACCENT}
 							autoCapitalize="words"
 							autoComplete="name"
 						/>
 					</View>
 
 					{/* Email Input */}
-					<View className="flex-row items-center bg-input rounded-full mb-4 px-4 h-14 border border-border">
-						<Ionicons name="mail-outline" size={20} color="#FF6600" style={{ marginRight: 12 }} />
+					<View className="flex-row items-center rounded-full mb-4 px-4 h-14 border" style={{ backgroundColor: INPUT_BG, borderColor: INPUT_BORDER }}>
+						<Ionicons name="mail-outline" size={20} color={ACCENT} style={{ marginRight: 12 }} />
 						<TextInput
-							className="flex-1 text-base text-foreground"
+							className="flex-1 text-base text-[#333]"
 							value={email}
 							onChangeText={setEmail}
-							placeholder="Your mail"
-							placeholderTextColor="#9CA3AF"
+							placeholder="Email"
+							placeholderTextColor={ACCENT}
 							keyboardType="email-address"
 							autoCapitalize="none"
 							autoComplete="email"
@@ -282,8 +277,8 @@ export default function SignupScreen() {
 					</View>
 
 					{/* Province Picker */}
-					<View className="flex-row items-center bg-input rounded-full mb-4 pl-4 h-14 border border-border">
-						<Ionicons name="map-outline" size={20} color="#FF6600" style={{ marginRight: 12 }} />
+					<View className="flex-row items-center rounded-full mb-4 pl-4 h-14 border" style={{ backgroundColor: INPUT_BG, borderColor: INPUT_BORDER }}>
+						<Ionicons name="map-outline" size={20} color={ACCENT} style={{ marginRight: 12 }} />
 						<View className="flex-1 ml-1">
 							<Picker
 								selectedValue={province}
@@ -291,29 +286,29 @@ export default function SignupScreen() {
 									setProvince(value);
 									setCity(''); // Reset city when province changes
 								}}
-								style={{ flex: 1, color: '#FF6600' }}
-								dropdownIconColor="#FF6600"
+								style={{ flex: 1, color: ACCENT }}
+								dropdownIconColor={ACCENT}
 							>
 								{provinces.map((p) => (
-									<Picker.Item key={p} label={p} value={p} color="#FF6600" />
+									<Picker.Item key={p} label={p} value={p} color={ACCENT} />
 								))}
 							</Picker>
 						</View>
 					</View>
 
 					{/* City Picker */}
-					<View className="flex-row items-center bg-input rounded-full mb-4 pl-4 h-14 border border-border">
-						<Ionicons name="business-outline" size={20} color="#FF6600" style={{ marginRight: 12 }} />
+					<View className="flex-row items-center rounded-full mb-4 pl-4 h-14 border" style={{ backgroundColor: INPUT_BG, borderColor: INPUT_BORDER }}>
+						<Ionicons name="business-outline" size={20} color={ACCENT} style={{ marginRight: 12 }} />
 						<View className="flex-1 ml-1">
 							<Picker
 								selectedValue={city}
 								onValueChange={(value) => setCity(value)}
-								style={{ flex: 1, color: '#FF6600' }}
-								dropdownIconColor="#FF6600"
+								style={{ flex: 1, color: ACCENT }}
+								dropdownIconColor={ACCENT}
 							>
 								<Picker.Item label="Select City" value="" color="#9CA3AF" />
 								{citiesByProvince[province]?.map((c) => (
-									<Picker.Item key={c} label={c} value={c} color="#FF6600" />
+									<Picker.Item key={c} label={c} value={c} color={ACCENT} />
 								))}
 							</Picker>
 						</View>
@@ -321,10 +316,10 @@ export default function SignupScreen() {
 
 					{/* Postal Code Input */}
 					<View className="relative" style={{ zIndex: 100, elevation: 5 }}>
-						<View className="flex-row items-center bg-input rounded-full mb-4 px-4 h-14 border border-border">
-							<Ionicons name="location-outline" size={20} color="#FF6600" style={{ marginRight: 12 }} />
+						<View className="flex-row items-center rounded-full mb-4 px-4 h-14 border" style={{ backgroundColor: INPUT_BG, borderColor: INPUT_BORDER }}>
+							<Ionicons name="location-outline" size={20} color={ACCENT} style={{ marginRight: 12 }} />
 							<TextInput
-								className="flex-1 text-base text-foreground"
+								className="flex-1 text-base text-[#333]"
 								value={postalCode}
 								onChangeText={(text) => {
 									setPostalCode(text);
@@ -336,7 +331,7 @@ export default function SignupScreen() {
 									setTimeout(() => setShowPostalSuggestions(false), 200);
 								}}
 								placeholder={city ? `Postal Code for ${city}` : "Select City First"}
-								placeholderTextColor="#9CA3AF"
+								placeholderTextColor={ACCENT}
 								keyboardType="numeric"
 								maxLength={4}
 								editable={!!city}
@@ -345,8 +340,8 @@ export default function SignupScreen() {
 						
 						{/* Postal Code Suggestions */}
 						{showPostalSuggestions && city && postalCodesByCity[city] && (
-							<View 
-								className="absolute top-14 left-0 right-0 bg-card border border-border rounded-lg shadow-lg max-h-40 overflow-hidden"
+								<View 
+								className="absolute top-14 left-0 right-0 bg-white border border-[#E5E5E5] rounded-lg shadow-lg max-h-40 overflow-hidden"
 								style={{ zIndex: 1000, elevation: 10 }}
 							>
 								{postalCodesByCity[city]
@@ -355,7 +350,7 @@ export default function SignupScreen() {
 									.map((code) => (
 										<TouchableOpacity
 											key={code}
-											className="p-3 border-b border-border last:border-0 bg-card active:bg-muted"
+											className="p-3 border-b border-[#F0F0F0] last:border-0 bg-white active:bg-gray-100"
 											onPress={() => {
 												setPostalCode(code);
 												setShowPostalSuggestions(false);
@@ -375,13 +370,13 @@ export default function SignupScreen() {
 
 					{/* Password Input */}
 					<View className="flex-row items-center bg-input rounded-full mb-4 px-4 h-14 border border-border">
-						<Ionicons name="lock-closed-outline" size={20} color="#FF6600" style={{ marginRight: 12 }} />
+							<Ionicons name="lock-closed-outline" size={20} color={ACCENT} style={{ marginRight: 12 }} />
 						<TextInput
 							className="flex-1 text-base text-foreground"
 							value={password}
 							onChangeText={setPassword}
 							placeholder="Password"
-							placeholderTextColor="#9CA3AF"
+							placeholderTextColor={ACCENT}
 							secureTextEntry={!showPassword}
 							autoCapitalize="none"
 							autoComplete="password-new"
@@ -400,13 +395,13 @@ export default function SignupScreen() {
 
 					{/* Confirm Password Input */}
 					<View className="flex-row items-center bg-input rounded-full mb-4 px-4 h-14 border border-border">
-						<Ionicons name="lock-closed-outline" size={20} color="#FF6600" style={{ marginRight: 12 }} />
+							<Ionicons name="lock-closed-outline" size={20} color={ACCENT} style={{ marginRight: 12 }} />
 						<TextInput
 							className="flex-1 text-base text-foreground"
 							value={confirmPassword}
 							onChangeText={setConfirmPassword}
 							placeholder="Confirm Password"
-							placeholderTextColor="#9CA3AF"
+							placeholderTextColor={ACCENT}
 							secureTextEntry={!showConfirmPassword}
 							autoCapitalize="none"
 							autoComplete="password-new"
@@ -424,21 +419,21 @@ export default function SignupScreen() {
 					</View>
 
 					{/* Role Picker */}
-					<View className="flex-row items-center bg-input rounded-full mb-4 pl-4 h-14 border border-border">
-						<Ionicons name="briefcase-outline" size={20} color="#FF6600" style={{ marginRight: 12 }} />
+							<View className="flex-row items-center rounded-full mb-4 pl-4 h-14 border" style={{ backgroundColor: INPUT_BG, borderColor: INPUT_BORDER }}>
+						<Ionicons name="briefcase-outline" size={20} color={ACCENT} style={{ marginRight: 12 }} />
 						<View className="flex-1 ml-1">
 							<Picker
 								selectedValue={role}
 								onValueChange={(value) => setRole(value)}
-								style={{ flex: 1, color: '#FF6600' }}
-								dropdownIconColor="#FF6600"
+								style={{ flex: 1, color: ACCENT }}
+								dropdownIconColor={ACCENT}
 							>
-								<Picker.Item label="Entrepreneur" value="Entrepreneur" color="#FF6600" />
-								<Picker.Item label="Researcher" value="Researcher" color="#FF6600" />
-								<Picker.Item label="SMME" value="SMME" color="#FF6600" />
-								<Picker.Item label="Student" value="Student" color="#FF6600" />
-								<Picker.Item label="Investor" value="Investor" color="#FF6600" />
-								<Picker.Item label="Tenant" value="Tenant" color="#FF6600" />
+								<Picker.Item label="Entrepreneur" value="Entrepreneur" color={ACCENT} />
+								<Picker.Item label="Researcher" value="Researcher" color={ACCENT} />
+								<Picker.Item label="SMME" value="SMME" color={ACCENT} />
+								<Picker.Item label="Student" value="Student" color={ACCENT} />
+								<Picker.Item label="Investor" value="Investor" color={ACCENT} />
+								<Picker.Item label="Tenant" value="Tenant" color={ACCENT} />
 							</Picker>
 						</View>
 					</View>
@@ -454,8 +449,8 @@ export default function SignupScreen() {
 								height: 20,
 								borderRadius: 4,
 								borderWidth: 2,
-								borderColor: acceptedTerms ? '#FF6600' : '#FF6600',
-								backgroundColor: acceptedTerms ? '#FF6600' : 'transparent',
+								borderColor: ACCENT,
+								backgroundColor: acceptedTerms ? ACCENT : 'transparent',
 								alignItems: 'center',
 								justifyContent: 'center',
 								marginRight: 10
@@ -463,17 +458,17 @@ export default function SignupScreen() {
 								{acceptedTerms && <Ionicons name="checkmark" size={16} color="white" />}
 							</View>
 						</Pressable>
-						<Text className="flex-1 text-[13px] text-muted-foreground leading-5">
+						<Text className="flex-1 text-[13px] text-[#8a8a8a] leading-5">
 							By Creating an account, you agree to our{' '}
-							<Text className="text-accent font-semibold">Terms & Conditions</Text>
+							<Text className="text-[#D4A03B] font-semibold">Terms & Conditions</Text>
 							{' '}and agree to{' '}
-							<Text className="text-accent font-semibold">Privacy Policy</Text>
+							<Text className="text-[#D4A03B] font-semibold">Privacy Policy</Text>
 						</Text>
 					</View>
 
 					{/* Sign Up Button */}
 					<Button
-						className="h-14 rounded-full bg-accent justify-center items-center mb-6 active:opacity-80 active:scale-95"
+						className="h-14 rounded-full bg-[#D4A03B] justify-center items-center mb-6 active:opacity-80 active:scale-95"
 						onPress={handleSignup}
 						disabled={isLoading}
 					>
@@ -483,40 +478,15 @@ export default function SignupScreen() {
 					</Button>
 
 					{/* Divider */}
-					<View className="flex-row items-center my-6">
-						<View className="flex-1 h-px bg-border" />
-						<Text className="text-muted-foreground mx-4 text-sm font-medium">
-							Or continue with
-						</Text>
-						<View className="flex-1 h-px bg-border" />
-					</View>
-
-					{/* Google Sign In Button */}
-					<Pressable
-						className="h-14 rounded-full bg-card border-2 border-border flex-row items-center justify-center mb-6 active:opacity-80 active:scale-95"
-						onPress={async () => {
-							try {
-								await signInWithGoogle();
-							} catch (error: any) {
-								Alert.alert('Error', error?.message || 'Failed to sign in with Google');
-							}
-						}}
-					>
-						<Ionicons name="logo-google" size={20} color="#4285F4" style={{ marginRight: 12 }} />
-						<Text className="text-base font-semibold text-foreground">
-							Continue with Google
-						</Text>
-					</Pressable>
-
-					{/* Login Link */}
-					<View className="flex-row justify-center items-center">
-						<Text className="text-sm text-muted-foreground">Already have an account? </Text>
+					<View className="flex-row justify-center items-center mt-4">
+						<Text className="text-sm text-[#8a8a8a]">Already have an account? </Text>
 						<Pressable onPress={() => router.push('/(auth)')}>
-							<Text className="text-sm font-semibold text-accent underline">Log In</Text>
+							<Text className="text-sm font-semibold text-[#D4A03B] underline">Log In</Text>
 						</Pressable>
 					</View>
-				</View>
-			</ScreenKeyboardAwareScrollView>
+					</View>
+				</ScreenKeyboardAwareScrollView>
+			</View>
 		</View>
 	);
 }
