@@ -1,22 +1,22 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import {
-  BarChart3,
-  Bell,
-  BookOpen,
-  Bot,
-  Briefcase,
-  Building2,
-  Car,
-  Cpu,
-  FlaskConical,
-  GalleryVerticalEnd,
-  LayoutDashboard,
-  PenTool,
-  Settings2,
-  Users,
-  Zap,
+	BarChart3,
+	Bell,
+	BookOpen,
+	Bot,
+	Briefcase,
+	Building2,
+	Car,
+	Cpu,
+	FlaskConical,
+	LayoutDashboard,
+	PenTool,
+	Settings2,
+	Users,
+	Zap,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -24,170 +24,157 @@ import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarRail,
+	Sidebar,
+	SidebarContent,
+	SidebarFooter,
+	SidebarHeader,
+	SidebarRail,
 } from "@/components/ui/sidebar"
 
 // This is sample data.
+const ElidzLogo = ({ className }: { className?: string }) => (
+	<div className={`relative ${className}`}>
+		<Image src="/logos/elidz-icon.png" alt="ELIDZ" fill className="object-contain" />
+	</div>
+)
+
 const data = {
-  user: {
-    name: "Admin User",
-    email: "admin@elidz.co.za",
-    avatar: "/avatars/admin.jpg",
-  },
-  teams: [
-    {
-      name: "ELIDZ Admin",
-      logo: GalleryVerticalEnd,
-      plan: "Science & Tech Park",
-    },
-  ],
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: LayoutDashboard,
-      isActive: true,
-    },
-    {
-      title: "User Management",
-      url: "#",
-      icon: Users,
-      items: [
-        {
-          title: "All Users",
-          url: "#",
-        },
-        {
-          title: "Registrations",
-          url: "#",
-        },
-        {
-          title: "User Roles",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Opportunities",
-      url: "#",
-      icon: Briefcase,
-      items: [
-        {
-          title: "View Opportunities",
-          url: "#",
-        },
-        {
-          title: "Post Opportunity",
-          url: "#",
-        },
-        {
-          title: "Funding Info",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Communication",
-      url: "#",
-      icon: Bell,
-      items: [
-        {
-          title: "Send Alerts",
-          url: "#",
-        },
-        {
-          title: "Message Center",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Reports",
-      url: "#",
-      icon: BarChart3,
-      items: [
-        {
-          title: "User Demographics",
-          url: "#",
-        },
-        {
-          title: "Product Line Visits",
-          url: "#",
-        },
-        {
-          title: "System Usage",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Security",
-          url: "#",
-        },
-        {
-          title: "Billing & Model",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "Food & Water Lab",
-      url: "#",
-      icon: FlaskConical,
-    },
-    {
-      name: "Design Centre",
-      url: "#",
-      icon: PenTool,
-    },
-    {
-      name: "Digital Hub",
-      url: "#",
-      icon: Cpu,
-    },
-    {
-      name: "Automotive & Mfg",
-      url: "#",
-      icon: Car,
-    },
-    {
-      name: "Renewable Energy",
-      url: "#",
-      icon: Zap,
-    },
-  ],
+	user: {
+		name: "Admin User",
+		email: "admin@elidz.co.za",
+		avatar: "/avatars/admin.jpg",
+	},
+	teams: [
+		{
+			name: "ELIDZ Admin",
+			logo: ElidzLogo,
+			plan: "Science & Technology Park",
+		},
+	],
+	navMain: [
+		{
+			title: "Dashboard",
+			url: "/dashboard",
+			icon: LayoutDashboard,
+			isActive: true,
+		},
+		{
+			title: "User Management",
+			url: "/dashboard/users",
+			icon: Users,
+			items: [
+				{
+					title: "All Users",
+					url: "/dashboard/users/all",
+				},
+				{
+					title: "Registrations",
+					url: "/dashboard/users/registrations",
+				},
+				{
+					title: "User Roles",
+					url: "/dashboard/users/roles",
+				},
+			],
+		},
+		{
+			title: "Opportunities",
+			url: "/dashboard/opportunities",
+			icon: Briefcase,
+			items: [
+				{
+					title: "View Opportunities",
+					url: "/dashboard/opportunities",
+				},
+				{
+					title: "Post Opportunity",
+					url: "/dashboard/opportunities/create",
+				},
+				{
+					title: "Funding Info",
+					url: "/dashboard/opportunities/funding",
+				},
+			],
+		},
+		{
+			title: "Communication",
+			url: "/dashboard/communication",
+			icon: Bell,
+			items: [
+				{
+					title: "Send Alerts",
+					url: "/dashboard/communication/alerts",
+				},
+				{
+					title: "Message Center",
+					url: "/dashboard/communication/messages",
+				},
+			],
+		},
+		{
+			title: "Reports",
+			url: "/dashboard/reports",
+			icon: BarChart3,
+			items: [
+				{
+					title: "User Demographics",
+					url: "/dashboard/reports/demographics",
+				},
+				{
+					title: "Product Line Visits",
+					url: "/dashboard/reports/visits",
+				},
+				{
+					title: "System Usage",
+					url: "/dashboard/reports/usage",
+				},
+			],
+		}
+	],
+	projects: [
+		{
+			name: "Food & Water Lab",
+			url: "/dashboard/projects/food-water-lab",
+			icon: FlaskConical,
+		},
+		{
+			name: "Design Centre",
+			url: "/dashboard/projects/design-centre",
+			icon: PenTool,
+		},
+		{
+			name: "Digital Hub",
+			url: "/dashboard/projects/digital-hub",
+			icon: Cpu,
+		},
+		{
+			name: "Automotive & Mfg",
+			url: "/dashboard/projects/automotive",
+			icon: Car,
+		},
+		{
+			name: "Renewable Energy",
+			url: "/dashboard/projects/renewable-energy",
+			icon: Zap,
+		},
+	],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  return (
-    <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
-      </SidebarHeader>
-      <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
-      </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={data.user} />
-      </SidebarFooter>
-      <SidebarRail />
-    </Sidebar>
-  )
+	return (
+		<Sidebar collapsible="icon" {...props}>
+			<SidebarHeader>
+				<TeamSwitcher teams={data.teams} />
+			</SidebarHeader>
+			<SidebarContent>
+				<NavMain items={data.navMain} />
+				<NavProjects projects={data.projects} />
+			</SidebarContent>
+			<SidebarFooter>
+				<NavUser user={data.user} />
+			</SidebarFooter>
+			<SidebarRail />
+		</Sidebar>
+	)
 }
 

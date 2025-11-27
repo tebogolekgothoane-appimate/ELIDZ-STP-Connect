@@ -12,36 +12,36 @@ export default async function middleware(req: NextRequest) {
     const session = await auth();
     const pathname = req.nextUrl.pathname;
 
-    // If user is not authenticated, redirect to login (except for login page itself)
-    if (!session) {
-        // Don't redirect if already on login page to avoid loops
-        if (pathname === "/auth/login" || pathname.startsWith("/auth/")) {
-            return NextResponse.next();
-        }
-        return NextResponse.redirect(new URL("/auth/login", req.url));
-    }
+    // // If user is not authenticated, redirect to login (except for login page itself)
+    // if (!session) {
+    //     // Don't redirect if already on login page to avoid loops
+    //     if (pathname === "/auth/login" || pathname.startsWith("/auth/")) {
+    //         return NextResponse.next();
+    //     }
+    //     return NextResponse.redirect(new URL("/auth/login", req.url));
+    // }
 
-    // Get user role from session
-    const userType = session.user?.userType || session.user?.role;
-    const userRole = reverseRoleMap[userType?.toString() || ""];
+    // // Get user role from session
+    // const userType = session.user?.userType || session.user?.role;
+    // const userRole = reverseRoleMap[userType?.toString() || ""];
 
-    // If user is authenticated but on login page, redirect to dashboard
-    if (pathname === "/auth/login") {
-        return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
+    // // If user is authenticated but on login page, redirect to dashboard
+    // if (pathname === "/auth/login") {
+    //     return NextResponse.redirect(new URL("/dashboard", req.url));
+    // }
 
-    // Role-based route protection (only for authenticated users)
+    // // Role-based route protection (only for authenticated users)
 
-    // Admin can access all routes
-    if (userRole === "admin") {
-        return NextResponse.next();
-    }
+    // // Admin can access all routes
+    // if (userRole === "admin") {
+    //     return NextResponse.next();
+    // }
 
-    // For now, only admins can access the admin portal
-    // Redirect non-admins to login
-    if (userRole !== "admin") {
-        return NextResponse.redirect(new URL("/auth/login", req.url));
-    }
+    // // For now, only admins can access the admin portal
+    // // Redirect non-admins to login
+    // if (userRole !== "admin") {
+    //     return NextResponse.redirect(new URL("/auth/login", req.url));
+    // }
 
     return NextResponse.next();
 }
