@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, TextInput, Pressable, ScrollView, Alert } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { useAuthContext } from '../../hooks/use-auth-context';
@@ -11,6 +11,7 @@ import { withAuthGuard } from '@/components/withAuthGuard';
 import { useContactsSearch } from '@/hooks/useSearch';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
 
 type UserRole = 'Entrepreneur' | 'Researcher' | 'SMME' | 'Student' | 'Investor' | 'Tenant';
 
@@ -23,6 +24,42 @@ function MessagesScreen() {
     const debouncedSearch = useDebounce(searchQuery, 300);
 
     const { data: contacts, isLoading: loading } = useContactsSearch(profile?.id || '', debouncedSearch);
+
+    useEffect(() => {
+        if (!profile?.id) return;
+
+        // Subscribe to new messages to update the list in real-time
+        // Use a debounced invalidation to avoid too many refreshes
+        let invalidationTimeout: ReturnType<typeof setTimeout>;
+        
+        const channel = supabase
+            .channel('public:messages')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'messages',
+                },
+                (payload: any) => {
+                    const newMessage = payload.new;
+                    // Only invalidate if message is not from current user (to avoid unnecessary refreshes)
+                    if (newMessage.sender_id !== profile.id) {
+                        // Debounce invalidations to avoid rapid-fire refreshes
+                        clearTimeout(invalidationTimeout);
+                        invalidationTimeout = setTimeout(() => {
+                            queryClient.invalidateQueries({ queryKey: ['contacts'] });
+                        }, 500); // Wait 500ms for potential batch of messages
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            clearTimeout(invalidationTimeout);
+            supabase.removeChannel(channel);
+        };
+    }, [profile?.id, queryClient]);
 
     const roles: (UserRole | 'All')[] = useMemo(() => {
         if (!contacts) return ['All'];

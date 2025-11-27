@@ -52,29 +52,32 @@ class ConnectionService {
 	async getConnectionRequests(userId: string): Promise<ConnectionRequest[]> {
 		console.log('ConnectionService.getConnectionRequests called for userId:', userId);
 
-		// Get incoming requests (where user is the addressee)
-		const { data: incoming, error: incomingError } = await supabase
-			.from('connections')
-			.select(`
-				*,
-				requester:profiles!connections_requester_id_fkey(*)
-			`)
-			.eq('addressee_id', userId)
-			.eq('status', 'pending');
+		// Run both queries in parallel for better performance
+		const [incomingResult, outgoingResult] = await Promise.all([
+			supabase
+				.from('connections')
+				.select(`
+					*,
+					requester:profiles!connections_requester_id_fkey(*)
+				`)
+				.eq('addressee_id', userId)
+				.eq('status', 'pending'),
+			supabase
+				.from('connections')
+				.select(`
+					*,
+					addressee:profiles!connections_addressee_id_fkey(*)
+				`)
+				.eq('requester_id', userId)
+				.eq('status', 'pending'),
+		]);
+
+		const { data: incoming, error: incomingError } = incomingResult;
+		const { data: outgoing, error: outgoingError } = outgoingResult;
 
 		if (incomingError) {
 			console.error('ConnectionService.getConnectionRequests incoming error:', incomingError);
 		}
-
-		// Get outgoing requests (where user is the requester)
-		const { data: outgoing, error: outgoingError } = await supabase
-			.from('connections')
-			.select(`
-				*,
-				addressee:profiles!connections_addressee_id_fkey(*)
-			`)
-			.eq('requester_id', userId)
-			.eq('status', 'pending');
 
 		if (outgoingError) {
 			console.error('ConnectionService.getConnectionRequests outgoing error:', outgoingError);
@@ -105,23 +108,26 @@ class ConnectionService {
 	async getAvailableUsers(userId: string, limit = 20, search?: string): Promise<Profile[]> {
 		console.log('ConnectionService.getAvailableUsers called for userId:', userId, 'search:', search);
 
-		// Get all users who are already connected (accepted connections)
-		const { data: connections, error: connectionsError } = await supabase
-			.from('connections')
-			.select('requester_id, addressee_id')
-			.or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
-			.eq('status', 'accepted');
+		// Run both exclusion queries in parallel
+		const [connectionsResult, pendingResult] = await Promise.all([
+			supabase
+				.from('connections')
+				.select('requester_id, addressee_id')
+				.or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
+				.eq('status', 'accepted'),
+			supabase
+				.from('connections')
+				.select('requester_id, addressee_id')
+				.or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
+				.eq('status', 'pending'),
+		]);
+
+		const { data: connections, error: connectionsError } = connectionsResult;
+		const { data: pendingConnections, error: pendingError } = pendingResult;
 
 		if (connectionsError) {
 			console.error('ConnectionService.getAvailableUsers connections error:', connectionsError);
 		}
-
-		// Get pending requests (both sent and received)
-		const { data: pendingConnections, error: pendingError } = await supabase
-			.from('connections')
-			.select('requester_id, addressee_id')
-			.or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
-			.eq('status', 'pending');
 
 		if (pendingError) {
 			console.error('ConnectionService.getAvailableUsers pending error:', pendingError);
@@ -310,29 +316,17 @@ class ConnectionService {
 	async getAllContacts(userId: string, search?: string): Promise<ContactWithConnection[]> {
 		console.log('ConnectionService.getAllContacts called for userId:', userId, 'search:', search);
 
-		const connections = await this.getAcceptedConnections(userId);
-		const connectionRequests = await this.getConnectionRequests(userId);
-		const available = await this.getAvailableUsers(userId, 20, search);
-
-		const { chatService } = await import('./chat.service');
-		// Fetch chats potentially filtered by search (message content)
-		// Note: If search is provided, getUserChats returns chats matching name OR message content.
-		const chats = await chatService.getUserChats(userId, search);
-
-		// Also fetch ALL chats to get last message info for connections that match by NAME but not message content
-		// This is getting complicated.
-		// Simplification: Fetch ALL chats to attach last message. 
-		// Filter connections based on name match OR if the chat matched the search (if we had a way to know).
-		// Better: Rely on client-side filtering for connections/pending names, 
-		// BUT use `chatService.getUserChats(userId, search)` to find message matches.
-
-		// Actually, let's just fetch all chats for metadata, and filter everything here.
-		// It's safer and consistent with previous behavior, plus data set is likely small.
-		// BUT user asked for search hooks to tables.
-		// If I use `chatService.getUserChats(userId, search)`, I get chats matching content.
-		// I should use that list to include connections that might not match name but match message.
-
-		const allChats = await chatService.getUserChats(userId); // Get all for display info
+		// Run all data fetches in parallel for better performance
+		const [connections, connectionRequests, available, allChats] = await Promise.all([
+			this.getAcceptedConnections(userId),
+			this.getConnectionRequests(userId),
+			this.getAvailableUsers(userId, 20, search),
+			// Only fetch chats once - we'll filter client-side
+			(async () => {
+				const { chatService } = await import('./chat.service');
+				return chatService.getUserChats(userId);
+			})(),
+		]);
 
 		const searchLower = search?.toLowerCase() || '';
 

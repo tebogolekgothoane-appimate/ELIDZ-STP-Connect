@@ -8,6 +8,7 @@ import { useAuthContext } from '@/hooks/use-auth-context';
 import { HeaderAvatar } from '@/components/HeaderAvatar';
 import { verificationService } from '@/services/verification.service';
 import type { SMMEVerification } from '@/services/verification.service';
+import { smmmeService, SMMEServiceProduct } from '@/services/smme.service';
 
 function ProfileScreen() {
     const { profile, isLoggedIn, isLoading, logout } = useAuthContext();
@@ -17,13 +18,29 @@ function ProfileScreen() {
     console.log(' ---- profile', profile);
 
     const [allVerifications, setAllVerifications] = useState<SMMEVerification[]>([]);
+    const [servicesProducts, setServicesProducts] = useState<{ services: SMMEServiceProduct[]; products: SMMEServiceProduct[] }>({ services: [], products: [] });
+    const [loadingServicesProducts, setLoadingServicesProducts] = useState(false);
 
     // Load verification status for SMME users
     useEffect(() => {
         if (isLoggedIn && profile?.id && profile?.role === 'SMME') {
             loadVerificationStatus();
+            loadServicesProducts();
         }
     }, [isLoggedIn, profile?.id, profile?.role]);
+
+    const loadServicesProducts = async () => {
+        if (!profile?.id) return;
+        setLoadingServicesProducts(true);
+        try {
+            const data = await smmmeService.getServicesProductsBySMME(profile.id);
+            setServicesProducts(data);
+        } catch (error) {
+            console.error('Error loading services/products:', error);
+        } finally {
+            setLoadingServicesProducts(false);
+        }
+    };
 
     const loadVerificationStatus = async () => {
         if (!profile?.id) return;
@@ -212,6 +229,102 @@ function ProfileScreen() {
                         )}
                     </View>
                 </View>
+
+                {/* SMME Products & Services Section */}
+                {isLoggedIn && profile?.role === 'SMME' && (
+                    <View className="mx-6 mb-6">
+                        <View className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+                            <View className="flex-row items-center justify-between mb-4">
+                                <View className="flex-row items-center">
+                                    <View className="w-10 h-10 rounded-full bg-[#002147]/5 items-center justify-center mr-3">
+                                        <Feather name="briefcase" size={20} color="#002147" />
+                                    </View>
+                                    <View>
+                                        <Text className="text-[#002147] font-bold text-base">Products & Services</Text>
+                                        <Text className="text-gray-500 text-xs mt-0.5">
+                                            {servicesProducts.products.length + servicesProducts.services.length} items listed
+                                        </Text>
+                                    </View>
+                                </View>
+                                <Pressable
+                                    onPress={() => router.push('/manage-products-services')}
+                                    className="px-4 py-2 bg-[#002147] rounded-lg active:opacity-90"
+                                >
+                                    <View className="flex-row items-center">
+                                        <Feather name="plus" size={16} color="white" />
+                                        <Text className="text-white font-semibold text-sm ml-1">Add</Text>
+                                    </View>
+                                </Pressable>
+                            </View>
+
+                            {loadingServicesProducts ? (
+                                <Text className="text-gray-400 text-sm text-center py-4">Loading...</Text>
+                            ) : servicesProducts.products.length === 0 && servicesProducts.services.length === 0 ? (
+                                <View className="items-center py-6">
+                                    <Feather name="package" size={32} color="#CBD5E0" />
+                                    <Text className="text-gray-400 text-sm mt-2 text-center">
+                                        No products or services listed yet
+                                    </Text>
+                                    <Text className="text-gray-400 text-xs mt-1 text-center">
+                                        Add your offerings to appear in the verified SMMEs directory
+                                    </Text>
+                                </View>
+                            ) : (
+                                <View>
+                                    {servicesProducts.products.length > 0 && (
+                                        <View className="mb-4">
+                                            <Text className="text-gray-600 text-xs font-semibold mb-2 uppercase tracking-wide">
+                                                Products ({servicesProducts.products.length})
+                                            </Text>
+                                            {servicesProducts.products.slice(0, 3).map((product) => (
+                                                <View key={product.id} className="bg-gray-50 rounded-lg p-3 mb-2 border border-gray-100">
+                                                    <Text className="text-[#002147] font-semibold text-sm">{product.name}</Text>
+                                                    <Text className="text-gray-500 text-xs mt-1" numberOfLines={1}>{product.description}</Text>
+                                                    {product.price && (
+                                                        <Text className="text-[#FF6600] text-xs font-bold mt-1">{product.price}</Text>
+                                                    )}
+                                                </View>
+                                            ))}
+                                            {servicesProducts.products.length > 3 && (
+                                                <Text className="text-gray-400 text-xs text-center mt-1">
+                                                    +{servicesProducts.products.length - 3} more products
+                                                </Text>
+                                            )}
+                                        </View>
+                                    )}
+
+                                    {servicesProducts.services.length > 0 && (
+                                        <View>
+                                            <Text className="text-gray-600 text-xs font-semibold mb-2 uppercase tracking-wide">
+                                                Services ({servicesProducts.services.length})
+                                            </Text>
+                                            {servicesProducts.services.slice(0, 3).map((service) => (
+                                                <View key={service.id} className="bg-gray-50 rounded-lg p-3 mb-2 border border-gray-100">
+                                                    <Text className="text-[#002147] font-semibold text-sm">{service.name}</Text>
+                                                    <Text className="text-gray-500 text-xs mt-1" numberOfLines={1}>{service.description}</Text>
+                                                </View>
+                                            ))}
+                                            {servicesProducts.services.length > 3 && (
+                                                <Text className="text-gray-400 text-xs text-center mt-1">
+                                                    +{servicesProducts.services.length - 3} more services
+                                                </Text>
+                                            )}
+                                        </View>
+                                    )}
+
+                                    <Pressable
+                                        onPress={() => router.push('/manage-products-services')}
+                                        className="mt-4 py-2 border border-[#002147] rounded-lg active:opacity-90"
+                                    >
+                                        <Text className="text-[#002147] font-semibold text-sm text-center">
+                                            Manage All Products & Services
+                                        </Text>
+                                    </Pressable>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                )}
 
                 {/* SMME Verification Status Banner */}
                 {isLoggedIn && profile?.role === 'SMME' && (

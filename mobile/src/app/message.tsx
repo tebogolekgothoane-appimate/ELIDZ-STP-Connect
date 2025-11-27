@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, Pressable, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, TextInput, Pressable, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Alert } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Text } from '@/components/ui/text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,8 @@ import { withAuthGuard } from '@/components/withAuthGuard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuthContext } from '@/hooks/use-auth-context';
 import { chatService, Message } from '@/services/chat.service';
+import * as DocumentPicker from 'expo-document-picker';
+import { supabase } from '@/lib/supabase';
 
 function MessageScreen() {
   const insets = useSafeAreaInsets();
@@ -17,14 +19,70 @@ function MessageScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [attachment, setAttachment] = useState<{ uri: string; type: 'image' | 'video' | 'document' | 'audio'; name: string } | null>(null);
 
   useEffect(() => {
     if (chatId && user) {
       loadMessages();
+      
+      // Subscribe to real-time changes
+      const channel = supabase
+        .channel(`chat_messages:${chatId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `chat_id=eq.${chatId}`,
+          },
+          (payload) => {
+            const newMessage = payload.new as Message;
+            // Only add if we don't already have it (to avoid duplicates from our own sends)
+            setMessages((current) => {
+              if (current.find(m => m.id === newMessage.id)) return current;
+              return [newMessage, ...current]; // Add to top (reverse order list)
+            });
+            // Mark as read immediately if we are viewing
+            if (newMessage.sender_id !== user.id) {
+               chatService.markMessagesAsRead(chatId, user.id);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     } else {
       setLoading(false);
     }
   }, [chatId, user]);
+
+  async function handlePickDocument() {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*', // Allow all types
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const file = result.assets[0];
+        const type = file.mimeType?.startsWith('image/') ? 'image' : 
+                     file.mimeType?.startsWith('video/') ? 'video' : 
+                     file.mimeType?.startsWith('audio/') ? 'audio' : 'document';
+        
+        setAttachment({
+            uri: file.uri,
+            type: type as any,
+            name: file.name
+        });
+      }
+    } catch (error) {
+      console.error('Error picking document:', error);
+      Alert.alert('Error', 'Failed to pick document');
+    }
+  }
 
   async function loadMessages() {
     if (!chatId) return;
@@ -46,19 +104,28 @@ function MessageScreen() {
   }
 
   async function handleSend() {
-    if (!message.trim() || !chatId || !user || sending) return;
+    if ((!message.trim() && !attachment) || !chatId || !user || sending) return;
 
     const messageText = message.trim();
+    const currentAttachment = attachment;
+    
     setMessage('');
+    setAttachment(null);
     setSending(true);
 
     try {
-      const newMessage = await chatService.sendMessage(chatId, user.id, messageText);
-      setMessages([...messages, newMessage]);
+      const newMessage = await chatService.sendMessage(chatId, user.id, messageText, currentAttachment || undefined);
+      // We rely on real-time subscription for updates, but adding locally makes it feel instant
+      setMessages((current) => {
+         if (current.find(m => m.id === newMessage.id)) return current;
+         return [newMessage, ...current];
+      });
     } catch (error) {
       console.error('Error sending message:', error);
-      // Restore message on error
+      Alert.alert('Error', 'Failed to send message');
+      // Restore state on error
       setMessage(messageText);
+      setAttachment(currentAttachment);
     } finally {
       setSending(false);
     }
@@ -81,9 +148,29 @@ function MessageScreen() {
                 : 'bg-white border border-gray-100 rounded-bl-none shadow-sm'
             }`}
         >
-          <Text className={`text-base ${isMe ? 'text-white' : 'text-gray-800'}`}>
-            {item.content}
-          </Text>
+          {item.attachment_url && (
+            <View className="mb-2">
+                {item.attachment_type === 'image' ? (
+                    <Image 
+                        source={{ uri: item.attachment_url }} 
+                        style={{ width: 200, height: 150, borderRadius: 8 }} 
+                        resizeMode="cover"
+                    />
+                ) : (
+                    <View className="flex-row items-center bg-black/10 p-2 rounded-lg">
+                        <Feather name="file-text" size={20} color={isMe ? 'white' : 'black'} />
+                        <Text className={`ml-2 text-xs ${isMe ? 'text-white' : 'text-gray-800'}`}>
+                            Attachment ({item.attachment_type})
+                        </Text>
+                    </View>
+                )}
+            </View>
+          )}
+          {item.content ? (
+            <Text className={`text-base ${isMe ? 'text-white' : 'text-gray-800'}`}>
+                {item.content}
+            </Text>
+          ) : null}
         </View>
         <Text className="text-[10px] text-gray-400 mt-1 px-1">
           {formatTime(item.created_at)}
@@ -162,7 +249,28 @@ function MessageScreen() {
           className="p-4 bg-white border-t border-gray-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]"
           style={{ paddingBottom: insets.bottom + 12 }}
         >
+          {attachment && (
+            <View className="flex-row items-center mb-2 bg-gray-50 p-2 rounded-lg border border-gray-200 self-start">
+                <View className="w-8 h-8 bg-gray-200 rounded justify-center items-center mr-2">
+                    <Feather name={attachment.type === 'image' ? 'image' : 'file-text'} size={16} color="#666" />
+                </View>
+                <Text className="text-sm text-gray-700 mr-2 max-w-[200px]" numberOfLines={1}>
+                    {attachment.name}
+                </Text>
+                <Pressable onPress={() => setAttachment(null)}>
+                    <Feather name="x" size={16} color="#FF4444" />
+                </Pressable>
+            </View>
+          )}
+
           <View className="flex-row items-end">
+            <Pressable
+                className="w-10 h-10 justify-center items-center mr-2 mb-1"
+                onPress={handlePickDocument}
+                disabled={sending}
+            >
+                <Feather name="plus-circle" size={24} color="#002147" />
+            </Pressable>
             <View className="flex-1 bg-gray-50 border border-gray-200 rounded-2xl px-4 py-2 min-h-[48px] max-h-[120px] flex-row items-center">
                 <TextInput
                     className="flex-1 text-base text-gray-800 pt-0 pb-0"
@@ -175,10 +283,10 @@ function MessageScreen() {
             </View>
             <Pressable
               className={`w-12 h-12 rounded-full justify-center items-center ml-3 shadow-sm ${
-                  message.trim() && !sending ? 'bg-[#FF6600]' : 'bg-gray-200'
+                  (message.trim() || attachment) && !sending ? 'bg-[#FF6600]' : 'bg-gray-200'
               }`}
               onPress={handleSend}
-              disabled={!message.trim() || sending}
+              disabled={(!message.trim() && !attachment) || sending}
             >
               {sending ? (
                 <ActivityIndicator size="small" color="white" />

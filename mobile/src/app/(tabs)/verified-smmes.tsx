@@ -161,7 +161,7 @@ export default function VerifiedSMMEsScreen() {
                         {isSMME && (
                             <Pressable
                                 className="bg-white/20 border border-white/30 px-4 py-2 rounded-xl active:opacity-80 ml-4"
-                                onPress={() => router.push({ pathname: '/post-service-product' as any })}
+                                onPress={() => router.push('/add-product-service')}
                             >
                                 <View className="flex-row items-center">
                                     <Feather name="plus" size={16} color="white" />
@@ -404,10 +404,10 @@ export default function VerifiedSMMEsScreen() {
                                             {/* Action Button */}
                                             <Pressable
                                                 className="mt-6 py-3 rounded-xl bg-[#002147] active:opacity-90 shadow-md flex-row justify-center items-center"
-                                                onPress={() => router.push({ pathname: '/tenant-detail', params: { name: smme.name, id: smme.id } })}
+                                                onPress={() => router.push(`/user-profile?id=${smme.id}`)}
                                             >
                                                 <Text className="text-white font-bold text-sm mr-2">
-                                                    View Full Profile
+                                                    View Profile & Connect
                                                 </Text>
                                                 <Feather name="arrow-right" size={16} color="white" />
                                             </Pressable>
