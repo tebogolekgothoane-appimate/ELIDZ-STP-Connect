@@ -10,6 +10,7 @@ import { connectionService, ContactWithConnection, ConnectionRequest } from '@/s
 import { withAuthGuard } from '@/components/withAuthGuard';
 import { useContactsSearch } from '@/hooks/useSearch';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useQueryClient } from '@tanstack/react-query';
 
 type UserRole = 'Entrepreneur' | 'Researcher' | 'SMME' | 'Student' | 'Investor' | 'Tenant';
 
@@ -17,6 +18,7 @@ function MessagesScreen() {
     const { profile, isLoggedIn } = useAuthContext();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedRole, setSelectedRole] = useState<UserRole | 'All'>('All');
+    const queryClient = useQueryClient();
 
     const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -80,6 +82,7 @@ function MessagesScreen() {
         try {
             await connectionService.sendConnectionRequest(profile.id, contact.id);
             Alert.alert('Success', `Connection request sent to ${contact.name}!`);
+            queryClient.invalidateQueries({ queryKey: ['contacts'] });
         } catch (error: any) {
             console.error('Error sending connection request:', error);
             Alert.alert('Error', error.message || 'Failed to send connection request.');
@@ -90,6 +93,7 @@ function MessagesScreen() {
         try {
             await connectionService.acceptConnectionRequest(connectionId);
             Alert.alert('Success', `You are now connected with ${userName}!`);
+            queryClient.invalidateQueries({ queryKey: ['contacts'] });
         } catch (error: any) {
             console.error('Error accepting connection:', error);
             Alert.alert('Error', error.message || 'Failed to accept connection request.');
@@ -100,6 +104,7 @@ function MessagesScreen() {
         try {
             await connectionService.declineConnectionRequest(connectionId);
             Alert.alert('Request Declined', `Connection request from ${userName} has been declined.`);
+            queryClient.invalidateQueries({ queryKey: ['contacts'] });
         } catch (error: any) {
             console.error('Error declining connection:', error);
             Alert.alert('Error', error.message || 'Failed to decline connection request.');
@@ -321,19 +326,24 @@ function MessagesScreen() {
                     )}
 
                     {contact.connectionStatus === 'pending_sent' && (
-                        <View className="ml-2">
-                            <Feather name="clock" size={20} color="#6C757D" />
+                        <View className="flex-row items-center ml-2 bg-gray-100 px-3 py-1.5 rounded-full">
+                            <Feather name="clock" size={14} color="#6C757D" style={{ marginRight: 6 }} />
+                            <Text className="text-xs font-medium text-gray-500">Requested</Text>
                         </View>
                     )}
 
                     {contact.connectionStatus === 'available' && (
-                        <View className="ml-2">
-                            <Feather name="user-plus" size={20} color="#002147" />
-                        </View>
+                        <Pressable
+                            className="ml-2 bg-[#002147] px-4 py-2 rounded-full flex-row items-center active:opacity-90"
+                            onPress={() => handleConnect(contact)}
+                        >
+                            <Feather name="user-plus" size={14} color="white" style={{ marginRight: 6 }} />
+                            <Text className="text-white text-xs font-bold">Connect</Text>
+                        </Pressable>
                     )}
 
                     {contact.connectionStatus === 'connected' && (
-                        <View className="ml-2">
+                        <View className="ml-2 bg-[#002147]/10 p-2 rounded-full">
                             <Feather name="message-circle" size={20} color="#002147" />
                         </View>
                     )}
