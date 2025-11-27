@@ -14,8 +14,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { HeaderAvatar } from '@/components/HeaderAvatar';
 import { HeaderNotificationIcon } from '@/components/HeaderNotificationIcon';
-import { useColorScheme } from '@/hooks/use-theme-color';
-import { NAV_THEME } from '@/theme/colors';
 
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -26,8 +24,6 @@ type TabType = 'messages' | 'requests' | 'discover';
 
 function MessagesScreen() {
     const { profile, isLoggedIn } = useAuthContext();
-    const { colorScheme } = useColorScheme();
-    const theme = NAV_THEME[colorScheme];
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedRole, setSelectedRole] = useState<UserRole | 'All'>('All');
     const [activeTab, setActiveTab] = useState<TabType>('messages');
@@ -480,14 +476,14 @@ function MessagesScreen() {
 
                     {/* Search Bar */}
                     <View 
-                        className="flex-row items-center bg-muted border border-border h-12 rounded-xl px-4 mt-6"
+                        className="flex-row items-center bg-gray-50 border border-gray-200 h-12 rounded-xl px-4 mt-6"
                         style={{ maxWidth: isTablet ? 1200 : '100%', alignSelf: 'center', width: '100%' }}
                     >
-                        <Feather name="search" size={20} color="#6C757D" />
+                        <Feather name="search" size={20} color="#9CA3AF" />
                         <TextInput
                             className="flex-1 ml-3 text-base text-foreground"
                             placeholder="Search people, companies..."
-                            placeholderTextColor="#9CA3AF"
+                            placeholderTextColor="#D1D5DB"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                         />

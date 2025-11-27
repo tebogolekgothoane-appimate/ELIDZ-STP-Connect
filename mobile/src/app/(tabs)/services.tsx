@@ -11,8 +11,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { HeaderAvatar } from '@/components/HeaderAvatar';
 import { HeaderNotificationIcon } from '@/components/HeaderNotificationIcon';
 import { useDebounce } from '@/hooks/useDebounce';
-import { useColorScheme } from '@/hooks/use-theme-color';
-import { NAV_THEME } from '@/theme/colors';
 
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -302,14 +300,14 @@ export default function ServicesScreen() {
 
 						{/* Search Bar */}
 						<View 
-							className="flex-row items-center bg-muted border border-border h-12 rounded-xl px-4 mt-6"
+							className="flex-row items-center bg-gray-50 border border-gray-200 h-12 rounded-xl px-4 mt-6"
 							style={{ maxWidth: isTablet ? 1200 : '100%', alignSelf: 'center', width: '100%' }}
 						>
-							<Feather name="search" size={20} color={theme.colors.textTertiary} />
+							<Feather name="search" size={20} color="#9CA3AF" />
 							<TextInput
 								className="flex-1 ml-3 text-base text-foreground"
 								placeholder="Search facilities..."
-								placeholderTextColor={theme.colors.textTertiary}
+								placeholderTextColor="#D1D5DB"
 								value={searchQuery}
 								onChangeText={setSearchQuery}
 							/>
@@ -319,7 +317,7 @@ export default function ServicesScreen() {
 									className="ml-2"
 									hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
 								>
-									<Feather name="x" size={18} color={theme.colors.textTertiary} />
+									<Feather name="x" size={18} color="#9CA3AF" />
 								</Pressable>
 							)}
 						</View>

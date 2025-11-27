@@ -11,8 +11,6 @@ import { HeaderAvatar } from '@/components/HeaderAvatar';
 import { HeaderNotificationIcon } from '@/components/HeaderNotificationIcon';
 import { useBusinessSearch } from '@/hooks/useSearch';
 import { useDebounce } from '@/hooks/useDebounce';
-import { useColorScheme } from '@/hooks/use-theme-color';
-import { NAV_THEME } from '@/theme/colors';
 
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -110,8 +108,6 @@ function mapSMMEToSMME(smmme: SMMEWithServicesProducts): SMME {
 
 export default function VerifiedSMMEsScreen() {
     const { profile: user } = useAuthContext();
-    const { colorScheme } = useColorScheme();
-    const theme = NAV_THEME[colorScheme];
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [expandedSMME, setExpandedSMME] = useState<string | null>(null);
@@ -178,14 +174,14 @@ export default function VerifiedSMMEsScreen() {
 
                     {/* Search Bar */}
                     <View 
-                        className="flex-row items-center bg-muted border border-border h-12 rounded-xl px-4 mt-6"
+                        className="flex-row items-center bg-gray-50 border border-gray-200 h-12 rounded-xl px-4 mt-6"
                         style={{ maxWidth: isTablet ? 1200 : '100%', alignSelf: 'center', width: '100%' }}
                     >
-                        <Feather name="search" size={20} color={theme.colors.textTertiary} />
+                        <Feather name="search" size={20} color="#9CA3AF" />
                         <TextInput
                             className="flex-1 ml-3 text-base text-foreground"
                             placeholder="Search SMMEs, products..."
-                            placeholderTextColor={theme.colors.textTertiary}
+                            placeholderTextColor="#D1D5DB"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                         />
