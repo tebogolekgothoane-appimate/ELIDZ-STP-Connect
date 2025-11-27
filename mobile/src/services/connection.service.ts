@@ -425,6 +425,28 @@ class ConnectionService {
 		return data as Profile;
 	}
 
+	/**
+	 * Calculate compatibility score between two users
+	 */
+	async calculateCompatibility(userId1: string, userId2: string): Promise<{
+		score: number;
+		reasons: string[];
+		level: 'high' | 'medium' | 'low';
+	} | null> {
+		const { recommendationService } = await import('./recommendation.service');
+		
+		const [user1, user2] = await Promise.all([
+			this.getProfileById(userId1),
+			this.getProfileById(userId2),
+		]);
+
+		if (!user1 || !user2) {
+			return null;
+		}
+
+		return recommendationService.calculateCompatibility(user1, user2);
+	}
+
 	private formatTimeAgo(dateString: string): string {
 		const date = new Date(dateString);
 		const now = new Date();

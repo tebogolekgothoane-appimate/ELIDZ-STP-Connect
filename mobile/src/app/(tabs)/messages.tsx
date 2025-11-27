@@ -270,6 +270,7 @@ function MessagesScreen() {
         );
     }
 
+
     function renderContact(contact: ContactWithConnection) {
         const initials = contact.name
             .split(' ')
